@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart2, Users, Gamepad, CreditCard, Menu } from 'lucide-react'
+import { BarChart2, Users, Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const navItems = [
