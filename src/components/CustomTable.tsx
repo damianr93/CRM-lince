@@ -348,66 +348,85 @@ export default function CustomTable<T extends RowData>({
 
   return (
     <div className="w-full">
-      {/* ============== FILTROS ============== */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-        {/* 1) Filtro columna/texto */}
-        <select
-          className="border border-gray-300 rounded px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          value={searchColumn}
-          onChange={(e) => {
-            setSearchColumn(e.target.value);
-            setSearchTerm("");
-          }}
-        >
-          <option value="">Buscar por...</option>
-          {columns.map((col) => (
-            <option key={col.field} value={col.field}>
-              {col.headerName}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          className="border border-gray-300 rounded px-2 py-1 text-gray-700 flex-grow focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          placeholder="Valor a buscar"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          disabled={!searchColumn}
-        />
-
-        {/* 2) Filtro rango de fechas */}
-        <div className="flex items-center gap-2">
-          <label className="text-gray-700 text-sm">Desde:</label>
+      {/* ============== FILTROS RESPONSIVOS ============== */}
+      <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-4">
+        {/* Fila 1: Filtro de búsqueda por columna */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select
+            className="border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:w-auto min-w-0 sm:min-w-[180px]"
+            value={searchColumn}
+            onChange={(e) => {
+              setSearchColumn(e.target.value);
+              setSearchTerm("");
+            }}
+          >
+            <option value="">Buscar por...</option>
+            {columns.map((col) => (
+              <option key={col.field} value={col.field}>
+                {col.headerName}
+              </option>
+            ))}
+          </select>
           <input
-            type="date"
-            className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-          <label className="text-gray-700 text-sm">Hasta:</label>
-          <input
-            type="date"
-            className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            type="text"
+            className="border border-gray-300 rounded px-3 py-2 text-gray-700 flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            placeholder="Valor a buscar"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={!searchColumn}
           />
         </div>
 
-        {/* 3) Filtro "siguiendo" por checkboxes */}
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700 text-sm">Siguiendo:</span>
-          {seguimientoOptions.map((opt) => (
-            <label key={opt} className="inline-flex items-center gap-1">
-              <input
-                type="checkbox"
-                value={opt}
-                checked={siguiendoChecks.includes(opt)}
-                onChange={() => handleSiguiendoChange(opt)}
-                className="focus:ring-2 focus:ring-yellow-400"
-              />
-              <span className="text-gray-700 text-sm">{opt}</span>
+        {/* Fila 2: Filtro de fechas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <label className="text-gray-700 text-sm font-medium whitespace-nowrap">
+              Desde:
             </label>
-          ))}
+            <input
+              type="date"
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:flex-1"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <label className="text-gray-700 text-sm font-medium whitespace-nowrap">
+              Hasta:
+            </label>
+            <input
+              type="date"
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:flex-1"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Fila 3: Filtro "siguiendo" por checkboxes */}
+        <div className="space-y-2">
+          <span className="text-gray-700 text-sm font-medium block">
+            Siguiendo:
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {seguimientoOptions.map((opt) => (
+              <label
+                key={opt}
+                className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  value={opt}
+                  checked={siguiendoChecks.includes(opt)}
+                  onChange={() => handleSiguiendoChange(opt)}
+                  className="focus:ring-2 focus:ring-yellow-400 text-yellow-500"
+                />
+                <span className="text-gray-700 text-sm select-none">
+                  {opt.replace('_', ' ')}
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 
