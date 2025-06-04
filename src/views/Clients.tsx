@@ -136,7 +136,7 @@ export default function ClientsViewer() {
   };
 
   return (
-    <div className="p-4 md:p-8 bg-gray-100 min-h-screen">
+    <div className="p-4 pt-12 md:p-8 bg-gray-100 min-h-screen">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-yellow-500">Clientes</h2>
         <button

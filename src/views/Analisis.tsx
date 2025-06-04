@@ -16,8 +16,11 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { AppDispatch, RootState } from "@/store/sotre";
-import { fetchAnalyticsDemand, fetchAnalyticsEvolution, fetchAnalyticsTotales } from "@/store/analytics/thunks";
-
+import {
+  fetchAnalyticsDemand,
+  fetchAnalyticsEvolution,
+  fetchAnalyticsTotales,
+} from "@/store/analytics/thunks";
 
 /* -------------------------------------------------------------------------- */
 /*                                  helpers                                   */
@@ -45,6 +48,7 @@ interface ProductData {
 export default function ClientsDashboard() {
   const dispatch = useDispatch<AppDispatch>();
 
+  // Extraemos del store: loading, error, totales, byChannel, evolution, byProduct
   const { loading, error, totales, byChannel, evolution, byProduct } = useSelector(
     (state: RootState) => state.analytics
   );
@@ -72,8 +76,10 @@ export default function ClientsDashboard() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8 space-y-8">
-      {/* Header + total contacts */}
+    <div className="mt-10 min-h-screen p-4 md:p-8 space-y-8">
+      {/* ------------------------------------------------------------------------ */}
+      {/* Header + total contacts + tarjetas por canal                            */}
+      {/* ------------------------------------------------------------------------ */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
@@ -84,17 +90,38 @@ export default function ClientsDashboard() {
           </p>
         </div>
 
+        {/* Tarjeta principal: Total de contactos */}
         <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardContent className="p-4 flex flex-col items-start sm:items-center">
-            <span className="text-2xl font-bold text-yellow-400">
-              {totales}
-            </span>
+            <span className="text-2xl font-bold text-yellow-400">{totales}</span>
             <span className="text-sm text-neutral-400">Contactos totales</span>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
+      {/* ------------------------------------------------------------------------ */}
+      {/* Mini‐cards con totales por canal                                           */}
+      {/* ------------------------------------------------------------------------ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {byChannel.map((c: ChannelData) => (
+          <Card
+            key={c.channel}
+            className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-gold-400/10 backdrop-blur-sm"
+          >
+            <CardContent className="p-4 flex flex-col items-start">
+              <span className="text-lg font-semibold text-neutral-200">
+                {c.channel.charAt(0).toUpperCase() + c.channel.slice(1).toLowerCase()}
+              </span>
+              <span className="mt-1 text-2xl font-bold text-yellow-400">{c.total}</span>
+              <span className="text-xs text-neutral-400">Contactos</span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* ------------------------------------------------------------------------ */}
+      {/* Charts                                                                   */}
+      {/* ------------------------------------------------------------------------ */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Bar chart – canales */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
@@ -167,8 +194,17 @@ export default function ClientsDashboard() {
                   dataKey="total"
                   stroke="#A44FFF"
                   strokeWidth={3}
-                  dot={{ fill: "#A44FFF", strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: "#A44FFF", strokeWidth: 2, fill: "#FFD700" }}
+                  dot={{
+                    fill: "#A44FFF",
+                    strokeWidth: 2,
+                    r: 6,
+                  }}
+                  activeDot={{
+                    r: 8,
+                    stroke: "#A44FFF",
+                    strokeWidth: 2,
+                    fill: "#FFD700",
+                  }}
                 />
               </LineChart>
             </ResponsiveContainer>
