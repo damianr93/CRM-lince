@@ -1,15 +1,15 @@
-// src/views/ClientsViewer.tsx
+
 import React, { useEffect, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
 import { PencilIcon, PlusIcon, TrashIcon, XIcon } from "lucide-react";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
   deleteClientThunk,
   getClientsThunk,
   postClientThunk,
   updateClientFieldThunk,
-  updateClientThunk
+  updateClientThunk,
 } from "@/store/clients/thunks";
 import type { AppDispatch, RootState } from "@/store/sotre";
 
@@ -27,8 +27,8 @@ export default function ClientsViewer() {
     { field: "producto", headerName: "Producto", align: "left" },
     { field: "localidad", headerName: "Localidad", align: "left" },
     { field: "actividad", headerName: "Actividad", align: "center" },
-    { field: "medioAdquisicion", headerName: "Medio Adq.", align: "center" },
     { field: "estado", headerName: "Estado", align: "center" },
+    { field: "siguiendo", headerName: "Siguiendo", align: "left" }, // ← Aquí agregas la columna
     { field: "createdAt", headerName: "Creado el", align: "center" },
   ];
 
@@ -47,6 +47,11 @@ export default function ClientsViewer() {
     },
   ];
 
+  // ========================================================================
+  // 8 Opciones válidas para "siguiendo" (usa las mismas en CustomTable)
+  const siguiendoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
+  // ========================================================================
+
   // Modal y edición
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -63,6 +68,7 @@ export default function ClientsViewer() {
     actividad: "CRIA",
     medioAdquisicion: "OTRO",
     estado: "PENDIENTE",
+    siguiendo: "SIN_ASIGNAR", // Inicializa en "SIN_ASIGNAR"
     observaciones: "",
   });
 
@@ -84,6 +90,7 @@ export default function ClientsViewer() {
       actividad: "CRIA",
       medioAdquisicion: "OTRO",
       estado: "PENDIENTE",
+      siguiendo: "SIN_ASIGNAR", // ← también aquí lo inicializas
       observaciones: "",
     });
     setIsEditing(false);
@@ -117,22 +124,24 @@ export default function ClientsViewer() {
     if (action.name === "editar") {
       openEditModal(row);
     } else if (action.name === "eliminar") {
-      if (row.id || row._id) {
-        const rowId = row.id ? row.id : row._id;
-        dispatch(deleteClientThunk(rowId!));
-      }
+      const rowId = row.id ? row.id : row._id!;
+      dispatch(deleteClientThunk(rowId));
     }
   };
 
-  const handleCellSave = (rowId: string | number, field: keyof Client, value: any) => {
-
-    const clientId = typeof rowId === 'string' ? rowId : String(rowId);
-
-    dispatch(updateClientFieldThunk({
-      id: clientId,
-      field: field as string,
-      value: value
-    }));
+  const handleCellSave = (
+    rowId: string | number,
+    field: keyof Client,
+    value: any
+  ) => {
+    const clientId = typeof rowId === "string" ? rowId : String(rowId);
+    dispatch(
+      updateClientFieldThunk({
+        id: clientId,
+        field: field as string,
+        value: value,
+      })
+    );
   };
 
   return (
@@ -190,6 +199,27 @@ export default function ClientsViewer() {
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </div>
+
+              {/* ========== NUEVO CAMPO "Siguiendo" ========== */}
+              <div className="grid grid-cols-1 gap-4">
+                <label className="text-gray-700 font-medium">Siguiendo</label>
+                <select
+                  value={currentClient.siguiendo}
+                  onChange={(e) =>
+                    handleChange("siguiendo", e.target.value)
+                  }
+                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  required
+                >
+                  {siguiendoOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* ============================================== */}
+
               <div className="grid grid-cols-2 gap-4">
                 <input
                   type="text"
@@ -231,21 +261,27 @@ export default function ClientsViewer() {
                   type="text"
                   placeholder="Producto"
                   value={currentClient.producto}
-                  onChange={(e) => handleChange("producto", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("producto", e.target.value)
+                  }
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
                 <input
                   type="text"
                   placeholder="Localidad"
                   value={currentClient.localidad}
-                  onChange={(e) => handleChange("localidad", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("localidad", e.target.value)
+                  }
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <select
                   value={currentClient.actividad}
-                  onChange={(e) => handleChange("actividad", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("actividad", e.target.value)
+                  }
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 >
                   <option value="CRIA">CRIA</option>
@@ -255,7 +291,9 @@ export default function ClientsViewer() {
                 </select>
                 <select
                   value={currentClient.medioAdquisicion}
-                  onChange={(e) => handleChange("medioAdquisicion", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("medioAdquisicion", e.target.value)
+                  }
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 >
                   <option value="INSTAGRAM">INSTAGRAM</option>
@@ -266,7 +304,9 @@ export default function ClientsViewer() {
                 </select>
                 <select
                   value={currentClient.estado}
-                  onChange={(e) => handleChange("estado", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("estado", e.target.value)
+                  }
                   className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 >
                   <option value="PENDIENTE">PENDIENTE</option>
@@ -277,7 +317,9 @@ export default function ClientsViewer() {
               <textarea
                 placeholder="Observaciones"
                 value={currentClient.observaciones}
-                onChange={(e) => handleChange("observaciones", e.target.value)}
+                onChange={(e) =>
+                  handleChange("observaciones", e.target.value)
+                }
                 className="border border-gray-300 rounded px-3 py-2 w-full h-20 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
               <div className="flex justify-end gap-2">

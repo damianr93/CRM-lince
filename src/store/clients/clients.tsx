@@ -18,6 +18,7 @@ export interface Client {
   estado?: "PENDIENTE" | "COMPRO" | "NO_COMPRO";
   observaciones?: string;
   createdAt?: string;
+  siguiendo?: "EZEQUIEL" | "DENIS" | "MARTIN" | "SIN_ASIGNAR";
   updatedAt?: string;
 }
 
