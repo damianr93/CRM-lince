@@ -20,10 +20,6 @@ import {
   fetchAnalyticsTotales,
 } from "@/store/analytics/thunks";
 
-/* -------------------------------------------------------------------------- */
-/*                                  helpers                                   */
-/* -------------------------------------------------------------------------- */
-
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
 
 interface ChannelData {
@@ -31,7 +27,7 @@ interface ChannelData {
   total: number;
 }
 interface TimePoint {
-  date: string; // formato "YYYY-MM"
+  date: string; 
   total: number;
 }
 interface ProductData {
@@ -39,14 +35,9 @@ interface ProductData {
   total: number;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                 component                                  */
-/* -------------------------------------------------------------------------- */
-
 export default function ClientsDashboard() {
   const dispatch = useDispatch<AppDispatch>();
 
-  // Extraemos del store: loading, error, totales, byChannel, evolution, byProduct
   const { loading, error, totales, byChannel, evolution, byProduct } = useSelector(
     (state: RootState) => state.analytics
   );
@@ -75,9 +66,7 @@ export default function ClientsDashboard() {
 
   return (
     <div className="mt-10 min-h-screen p-4 md:p-8 space-y-8">
-      {/* ------------------------------------------------------------------------ */}
-      {/* Header + total contacts + tarjetas por canal                            */}
-      {/* ------------------------------------------------------------------------ */}
+
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
@@ -88,7 +77,6 @@ export default function ClientsDashboard() {
           </p>
         </div>
 
-        {/* Tarjeta principal: Total de contactos */}
         <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardContent className="p-4 flex flex-col items-start sm:items-center">
             <span className="text-2xl font-bold text-yellow-400">{totales}</span>
@@ -97,9 +85,6 @@ export default function ClientsDashboard() {
         </Card>
       </div>
 
-      {/* ------------------------------------------------------------------------ */}
-      {/* Mini‐cards con totales por canal                                           */}
-      {/* ------------------------------------------------------------------------ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {byChannel.map((c: ChannelData) => (
           <Card
@@ -117,11 +102,8 @@ export default function ClientsDashboard() {
         ))}
       </div>
 
-      {/* ------------------------------------------------------------------------ */}
-      {/* Charts                                                                   */}
-      {/* ------------------------------------------------------------------------ */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Bar chart – canales */}
+
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
@@ -159,7 +141,6 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Line chart – evolución */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
@@ -209,7 +190,6 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Horizontal bars – productos */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
