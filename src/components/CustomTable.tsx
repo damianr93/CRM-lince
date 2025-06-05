@@ -1,5 +1,3 @@
-// src/components/CustomTable.tsx
-
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { SaveIcon, XIcon } from "lucide-react";
 
@@ -12,7 +10,7 @@ export interface Column {
 export interface RowData {
   [key: string]: any;
 }
-
+  
 export interface Action {
   name?: string;
   color?: "default" | "primary" | "secondary" | "inherit";
@@ -47,11 +45,12 @@ export default function CustomTable<T extends RowData>({
   pagination,
   onSaveCell,
 }: CustomTableProps<T>) {
+  // --------------------------------------
+  // State interno
+  // --------------------------------------
   const [tableData, setTableData] = useState<T[]>(data);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(
-    pagination?.rowsPerPage ?? 7
-  );
+  const [rowsPerPage, setRowsPerPage] = useState(pagination?.rowsPerPage ?? 7);
   const [searchColumn, setSearchColumn] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -62,56 +61,46 @@ export default function CustomTable<T extends RowData>({
   const [siguiendoChecks, setSiguiendoChecks] = useState<string[]>([]);
 
   /** Para inline editing: fila y campo en edición */
-  const [editingCell, setEditingCell] = useState<{
-    rowIndex: number;
-    field: string;
-  } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ rowIndex: number; field: string } | null>(null);
   const [editingValue, setEditingValue] = useState<any>("");
 
   /** =========== Ordenamiento =========== */
   const [sortField, setSortField] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    null
-  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
 
   /** ========== Anchos dinámicos ========== */
   const totalCols = columns.length + (actions ? 1 : 0);
-  const [widths, setWidths] = useState<number[]>(
-    Array.from({ length: totalCols }, () => 150)
-  );
+  const [widths, setWidths] = useState<number[]>(Array.from({ length: totalCols }, () => 150));
 
   /** Refs para resize */
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
   const activeColRef = useRef<number>(-1);
 
+  // --------------------------------------
+  // Effects: 
+  // - cuando cambian data o totalCols, reiniciar estado de orden y anchuras
+  // - resetear 'page' cuando cambian filtros u orden
+  // --------------------------------------
   useEffect(() => {
     setTableData(data);
     setPage(0);
     setWidths(Array.from({ length: totalCols }, () => 150));
-    // si cambia data, reiniciamos orden también
     setSortField(null);
     setSortDirection(null);
   }, [data, totalCols]);
 
-  /** Resetear página al cambiar búsqueda, columna, orden o filtros */
   useEffect(() => {
     setPage(0);
-  }, [
-    searchTerm,
-    searchColumn,
-    sortField,
-    sortDirection,
-    dateFrom,
-    dateTo,
-    siguiendoChecks,
-  ]);
+  }, [searchTerm, searchColumn, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks]);
 
-  /** ======== Filtrado + Orden ======== */
+  // --------------------------------------
+  // Filtrado + Ordenamiento
+  // --------------------------------------
   const filteredData = useMemo(() => {
     let temp = tableData;
 
-    // 0) Filtrar por rango de fechas si se especifican
+    // 0) Filtrar por rango de fechas (createdAt) si se especifica
     if (dateFrom || dateTo) {
       temp = temp.filter((row) => {
         const raw = row["createdAt"];
@@ -138,37 +127,32 @@ export default function CustomTable<T extends RowData>({
       });
     }
 
-    // 2) Filtrar si hay searchColumn + searchTerm
+    // 2) Filtrar por búsqueda de columna
     if (searchColumn && searchTerm) {
       temp = temp.filter((row) => {
         let value: any = "";
         if (searchColumn.includes(".")) {
           const [parent, child] = searchColumn.split(".");
-          value =
-            row[parent] && row[parent][child] !== undefined
-              ? row[parent][child]
-              : "";
+          value = row[parent] && row[parent][child] !== undefined ? row[parent][child] : "";
         } else {
           value = row[searchColumn] ?? "";
         }
-        return String(value)
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
 
-    // 3) Ordenar si sortField no es null
+    // 3) Ordenar si hay sortField y sortDirection
     if (sortField && sortDirection) {
       temp = [...temp].sort((a, b) => {
         const aVal = a[sortField];
         const bVal = b[sortField];
 
-        // Números
+        // Comparar números
         if (typeof aVal === "number" && typeof bVal === "number") {
           return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
         }
 
-        // Si parecen fechas ISO
+        // Comparar fechas ISO
         if (
           typeof aVal === "string" &&
           typeof bVal === "string" &&
@@ -180,7 +164,7 @@ export default function CustomTable<T extends RowData>({
           return sortDirection === "asc" ? da - db : db - da;
         }
 
-        // Comparación de cadenas
+        // Comparar como cadenas
         const aStr = String(aVal).toLowerCase();
         const bStr = String(bVal).toLowerCase();
         const cmp = aStr.localeCompare(bStr);
@@ -189,40 +173,30 @@ export default function CustomTable<T extends RowData>({
     }
 
     return temp;
-  }, [
-    tableData,
-    searchColumn,
-    searchTerm,
-    sortField,
-    sortDirection,
-    dateFrom,
-    dateTo,
-    siguiendoChecks,
-  ]);
+  }, [tableData, searchColumn, searchTerm, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks]);
 
-  /** ========== Paginación ========== */
+  // --------------------------------------
+  // Paginación
+  // --------------------------------------
   const paginatedData = useMemo(() => {
     if (!pagination) return filteredData;
     const start = page * rowsPerPage;
     return filteredData.slice(start, start + rowsPerPage);
   }, [filteredData, page, rowsPerPage, pagination]);
 
-  const pageCount = pagination
-    ? Math.ceil(filteredData.length / rowsPerPage)
-    : 1;
-
+  const pageCount = pagination ? Math.ceil(filteredData.length / rowsPerPage) : 1;
   const handlePrevPage = () => setPage((prev) => Math.max(prev - 1, 0));
   const handleNextPage = () => {
     if (page < pageCount - 1) setPage((prev) => prev + 1);
   };
-  const handleRowsPerPageChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setRowsPerPage(parseInt(e.target.value, 10));
     setPage(0);
   };
 
-  /** ========== Resize de columnas ========== */
+  // --------------------------------------
+  // Resize de columnas: maneja mousedown, mousemove, mouseup
+  // --------------------------------------
   const onMouseMove = (e: MouseEvent) => {
     if (activeColRef.current < 0) return;
     const deltaX = e.clientX - startXRef.current;
@@ -233,12 +207,16 @@ export default function CustomTable<T extends RowData>({
       return copy;
     });
   };
+
   const onMouseUp = () => {
     activeColRef.current = -1;
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
   };
+
   const handleMouseDown = (index: number, e: React.MouseEvent) => {
+    // PREVENIR que el click de resize dispare ordenamiento
+    e.stopPropagation();
     activeColRef.current = index;
     startXRef.current = e.clientX;
     startWidthRef.current = widths[index];
@@ -246,7 +224,9 @@ export default function CustomTable<T extends RowData>({
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  /** ========== Inline editing ========== */
+  // --------------------------------------
+  // Inline editing: doble clic, guardar, cancelar
+  // --------------------------------------
   const handleCellDoubleClick = (rowIdx: number, field: string) => {
     const original = paginatedData[rowIdx][field];
     // Si es createdAt, extraer "YYYY-MM-DD"
@@ -264,16 +244,14 @@ export default function CustomTable<T extends RowData>({
     const { rowIndex, field } = editingCell;
     const currentRow = paginatedData[rowIndex];
 
-    // 1) Actualizar localmente en tableData
+    // Actualizar localmente
     setTableData((prev) => {
       const updated = [...prev];
-      const realIdx = filteredData.findIndex(
-        (r) => r === paginatedData[rowIndex]
-      );
+      const realIdx = filteredData.findIndex((r) => r === paginatedData[rowIndex]);
       if (realIdx >= 0) {
         let newValue = editingValue;
         if (field === "createdAt") {
-          // editingValue es "YYYY-MM-DD"
+          // convertir de "YYYY-MM-DD" a ISO
           newValue = new Date(editingValue + "T00:00:00Z").toISOString();
         }
         updated[realIdx] = { ...updated[realIdx], [field]: newValue };
@@ -281,7 +259,7 @@ export default function CustomTable<T extends RowData>({
       return updated;
     });
 
-    // 2) Notificar al padre sólo el campo modificado
+    // Notificar al padre
     const identifier = (currentRow as any).id || (currentRow as any)._id;
     if (onSaveCell && identifier) {
       let emittedValue = editingValue;
@@ -302,12 +280,12 @@ export default function CustomTable<T extends RowData>({
 
   const tabFilteredData = paginatedData;
 
-  /** Opciones para select en otros campos */
+  /** Opciones para selects en ciertos campos */
   const actividades = ["CRIA", "RECRIA", "MIXTO", "DISTRIBUIDOR"];
   const medios = ["INSTAGRAM", "WEB", "WHATSAPP", "FACEBOOK", "OTRO"];
   const estados = ["PENDIENTE", "COMPRO", "NO_COMPRO"];
 
-  /** ========== Formatear ISO a "YYYY/MM/DD" usando UTC ========== */
+  /** Formatear ISO a "YYYY/MM/DD" usando UTC  */
   const formatDateDisplay = (isoString: string) => {
     const d = new Date(isoString);
     const yyyy = d.getUTCFullYear();
@@ -316,26 +294,22 @@ export default function CustomTable<T extends RowData>({
     return `${yyyy}/${mm}/${dd}`;
   };
 
-  /** ========== Manejo de clic en encabezado: alterna orden ========== */
-  const handleHeaderClick = (field: string) => {
+  /** Alternar ordenamiento al hacer clic en el ícono (solo allí) */
+  const handleSortClick = (field: string) => {
     if (sortField !== field) {
-      // Nueva columna, arrancar en asc
       setSortField(field);
       setSortDirection("asc");
     } else {
-      // Si ya era asc, cambiar a desc
       if (sortDirection === "asc") {
         setSortDirection("desc");
-      }
-      // Si era desc, reset (sin orden)
-      else if (sortDirection === "desc") {
+      } else if (sortDirection === "desc") {
         setSortField(null);
         setSortDirection(null);
       }
     }
   };
 
-  /** ========== Manejo de checkboxes "siguiendo" ========== */
+  /** Manejar cambio de checkboxes "siguiendo" */
   const handleSiguiendoChange = (opt: string) => {
     setSiguiendoChecks((prev) => {
       if (prev.includes(opt)) {
@@ -346,6 +320,9 @@ export default function CustomTable<T extends RowData>({
     });
   };
 
+  // --------------------------------------
+  // Render general
+  // --------------------------------------
   return (
     <div className="w-full">
       {/* ============== FILTROS RESPONSIVOS ============== */}
@@ -405,9 +382,7 @@ export default function CustomTable<T extends RowData>({
 
         {/* Fila 3: Filtro "siguiendo" por checkboxes */}
         <div className="space-y-2">
-          <span className="text-gray-700 text-sm font-medium block">
-            Siguiendo:
-          </span>
+          <span className="text-gray-700 text-sm font-medium block">Siguiendo:</span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {seguimientoOptions.map((opt) => (
               <label
@@ -421,9 +396,7 @@ export default function CustomTable<T extends RowData>({
                   onChange={() => handleSiguiendoChange(opt)}
                   className="focus:ring-2 focus:ring-yellow-400 text-yellow-500"
                 />
-                <span className="text-gray-700 text-sm select-none">
-                  {opt.replace('_', ' ')}
-                </span>
+                <span className="text-gray-700 text-sm select-none">{opt.replace("_", " ")}</span>
               </label>
             ))}
           </div>
@@ -436,7 +409,7 @@ export default function CustomTable<T extends RowData>({
           <thead className="bg-gray-800">
             <tr>
               {columns.map((col, colIndex) => {
-                // Flecha de orden
+                // Determinar flecha de orden ("▲" or "▼")
                 let arrow = "";
                 if (sortField === col.field) {
                   arrow = sortDirection === "asc" ? " ▲" : " ▼";
@@ -446,15 +419,29 @@ export default function CustomTable<T extends RowData>({
                     key={col.field}
                     style={{ width: widths[colIndex] }}
                     className={`relative px-4 py-2 text-sm font-semibold text-white ${col.align === "center"
-                      ? "text-center"
-                      : col.align === "right"
-                        ? "text-right"
-                        : "text-left"
-                      } sticky top-0 cursor-pointer select-none`}
-                    onClick={() => handleHeaderClick(col.field)}
+                        ? "text-center"
+                        : col.align === "right"
+                          ? "text-right"
+                          : "text-left"
+                      } sticky top-0`}
                   >
-                    {col.headerName}
-                    <span className="ml-1 text-xs">{arrow}</span>
+                    {/* 
+                      Agrupamos el título y la flecha en un span que captura el click 
+                      para ordenar. 
+                    */}
+                    <span
+                      className="inline-flex items-center gap-1 cursor-pointer select-none"
+                      onClick={() => handleSortClick(col.field)}
+                    >
+                      <span>{col.headerName}</span>
+                      <span className="text-xs">{arrow}</span>
+                    </span>
+
+                    {/* 
+                      Zona estrecha a la derecha: "resize handle". 
+                      Solo responde a mousedown para redimensionar, 
+                      y usamos e.stopPropagation() para evitar que dispare sort.
+                    */}
                     <div
                       onMouseDown={(e) => handleMouseDown(colIndex, e)}
                       className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-gray-400"
@@ -462,6 +449,7 @@ export default function CustomTable<T extends RowData>({
                   </th>
                 );
               })}
+
               {actions && (
                 <th
                   style={{ width: widths[columns.length] }}
@@ -476,27 +464,21 @@ export default function CustomTable<T extends RowData>({
               )}
             </tr>
           </thead>
+
           <tbody>
             {tabFilteredData.map((row, rowIndex) => {
               const isEven = rowIndex % 2 === 0;
               return (
-                <tr
-                  key={rowIndex}
-                  className={isEven ? "bg-gray-50" : "bg-white"}
-                >
+                <tr key={rowIndex} className={isEven ? "bg-gray-50" : "bg-white"}>
                   {columns.map((col) => {
                     const isEditingThis =
-                      editingCell?.rowIndex === rowIndex &&
-                      editingCell.field === col.field;
+                      editingCell?.rowIndex === rowIndex && editingCell.field === col.field;
 
                     // Obtener valor bruto
                     let rawValue: any = "-";
                     if (col.field.includes(".")) {
                       const [parent, child] = col.field.split(".");
-                      rawValue =
-                        row[parent] && row[parent][child] !== undefined
-                          ? row[parent][child]
-                          : "-";
+                      rawValue = row[parent] && row[parent][child] !== undefined ? row[parent][child] : "-";
                     } else {
                       rawValue = row[col.field] ?? "-";
                     }
@@ -511,14 +493,12 @@ export default function CustomTable<T extends RowData>({
                       <td
                         key={col.field}
                         className={`px-4 py-2 text-sm text-gray-700 ${col.align === "center"
-                          ? "text-center"
-                          : col.align === "right"
-                            ? "text-right"
-                            : "text-left"
+                            ? "text-center"
+                            : col.align === "right"
+                              ? "text-right"
+                              : "text-left"
                           } overflow-visible relative z-10`}
-                        onDoubleClick={() =>
-                          handleCellDoubleClick(rowIndex, col.field)
-                        }
+                        onDoubleClick={() => handleCellDoubleClick(rowIndex, col.field)}
                       >
                         {isEditingThis ? (
                           <div className="relative w-full">
@@ -527,33 +507,26 @@ export default function CustomTable<T extends RowData>({
                               <input
                                 type="date"
                                 value={editingValue || ""}
-                                onChange={(e) =>
-                                  setEditingValue(e.target.value)
-                                }
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               />
                             )}
 
                             {/* ====== Campo numérico ====== */}
-                            {(col.field === "cabezas" ||
-                              col.field === "mesesSuplemento") && (
-                                <input
-                                  type="number"
-                                  value={editingValue}
-                                  onChange={(e) =>
-                                    setEditingValue(Number(e.target.value))
-                                  }
-                                  className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                />
-                              )}
+                            {(col.field === "cabezas" || col.field === "mesesSuplemento") && (
+                              <input
+                                type="number"
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(Number(e.target.value))}
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                              />
+                            )}
 
                             {/* ====== Campo "actividad" ====== */}
                             {col.field === "actividad" && (
                               <select
                                 value={editingValue}
-                                onChange={(e) =>
-                                  setEditingValue(e.target.value)
-                                }
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {actividades.map((opt) => (
@@ -568,9 +541,7 @@ export default function CustomTable<T extends RowData>({
                             {col.field === "medioAdquisicion" && (
                               <select
                                 value={editingValue}
-                                onChange={(e) =>
-                                  setEditingValue(e.target.value)
-                                }
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {medios.map((opt) => (
@@ -585,9 +556,7 @@ export default function CustomTable<T extends RowData>({
                             {col.field === "estado" && (
                               <select
                                 value={editingValue}
-                                onChange={(e) =>
-                                  setEditingValue(e.target.value)
-                                }
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {estados.map((opt) => (
@@ -602,9 +571,7 @@ export default function CustomTable<T extends RowData>({
                             {col.field === "siguiendo" && (
                               <select
                                 value={editingValue}
-                                onChange={(e) =>
-                                  setEditingValue(e.target.value)
-                                }
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {seguimientoOptions.map((opt) => (
@@ -628,9 +595,7 @@ export default function CustomTable<T extends RowData>({
                                 <input
                                   type="text"
                                   value={editingValue}
-                                  onChange={(e) =>
-                                    setEditingValue(e.target.value)
-                                  }
+                                  onChange={(e) => setEditingValue(e.target.value)}
                                   className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
                               )}
@@ -654,16 +619,17 @@ export default function CustomTable<T extends RowData>({
                       </td>
                     );
                   })}
+
                   {actions && (
                     <td className="px-4 py-2 text-sm text-center">
                       {actions.map((action, idx) => (
                         <button
                           key={idx}
                           className={`mx-1 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${action.color === "primary"
-                            ? "text-blue-600"
-                            : action.color === "secondary"
-                              ? "text-red-600"
-                              : "text-gray-600"
+                              ? "text-blue-600"
+                              : action.color === "secondary"
+                                ? "text-red-600"
+                                : "text-gray-600"
                             }`}
                           onClick={() => onActionClick(action, row as T)}
                           title={action.tooltip}
@@ -676,6 +642,7 @@ export default function CustomTable<T extends RowData>({
                 </tr>
               );
             })}
+
             {tabFilteredData.length === 0 && (
               <tr>
                 <td
