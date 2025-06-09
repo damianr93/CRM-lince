@@ -63,7 +63,7 @@ export default function ClientsViewer() {
     actividad: "CRIA",
     medioAdquisicion: "OTRO",
     estado: "PENDIENTE",
-    siguiendo: "SIN_ASIGNAR", 
+    siguiendo: "SIN_ASIGNAR",
     observaciones: "",
   });
 
@@ -139,17 +139,72 @@ export default function ClientsViewer() {
     );
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+
+      const baseUrl = import.meta.env.VITE_API_URL || "";
+      const url = `${baseUrl}/clients/export/excel`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error al generar Excel: ${response.status}`);
+      }
+
+      // Convertimos la respuesta en blob
+      const blob = await response.blob();
+      // Creamos un object URL y forzamos descarga
+      const downloadUrl = window.URL.createObjectURL(
+        new Blob([blob], { type: response.headers.get("Content-Type") || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      );
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", "clientes_completos.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error("No se pudo descargar el Excel:", err);
+      alert("Ocurrió un error al descargar el Excel. Revisa consola.");
+    }
+  };
+
+
   return (
     <div className="p-4 pt-12 md:p-8 bg-gray-100 min-h-screen">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-yellow-500">Clientes</h2>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-600"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Agregar Cliente
-        </button>
+      {/* Header responsive */}
+      <div className="mb-4">
+        {/* Título siempre visible */}
+        <h2 className="text-xl sm:text-2xl font-bold text-yellow-500 mb-4 sm:mb-0">
+          Clientes
+        </h2>
+
+        {/* Contenedor de botones responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
+          {/* Botón Excel */}
+          <button
+            onClick={handleDownloadExcel}
+            className="flex items-center justify-center gap-2 bg-green-400 hover:bg-green-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base transition-colors duration-200"
+          >
+            <span className="text-lg sm:text-xl">📊</span>
+            <span className="hidden xs:inline">Descargar Excel</span>
+            <span className="xs:hidden">Excel</span>
+          </button>
+
+          {/* Botón Agregar Cliente */}
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-600 text-sm sm:text-base transition-colors duration-200"
+          >
+            <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden xs:inline">Agregar Cliente</span>
+            <span className="xs:hidden">Agregar</span>
+          </button>
+        </div>
       </div>
 
       {loading && <div className="mb-4 text-gray-700">Cargando clientes...</div>}
