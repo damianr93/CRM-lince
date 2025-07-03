@@ -52,7 +52,7 @@ const clientsSlice = createSlice({
     },
     updateClient(state, action) {
       const updated = action.payload;
-      // Determinamos el identificador real que vino en el payload:
+
       const payloadId = updated.id || updated._id;
       state.clients = state.clients.map((c) => {
         const clientId = c.id || c._id;

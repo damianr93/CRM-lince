@@ -10,6 +10,12 @@ export interface TimePoint {
   total: number;
 }
 
+export interface StatusPoint {
+  status: 'Compras' | 'No Compras' | 'Pendientes';
+  total: number;
+  percentage: number;
+}
+
 export interface ProductData {
   product: string;
   total: number;
@@ -18,10 +24,11 @@ export interface ProductData {
 interface AnalyticsState {
   loading: boolean;
   error: string | null;
-  totales: number;                   // Total de contactos
-  byChannel: ChannelData[];          // Conteo por canal
-  evolution: TimePoint[];            // Evolución mensual
-  byProduct: ProductData[];          // Demanda por producto
+  totales: number;                  
+  byChannel: ChannelData[];       
+  evolution: TimePoint[];        
+  byProduct: ProductData[];
+  statusPurchase: StatusPoint[]
 }
 
 const initialState: AnalyticsState = {
@@ -31,11 +38,9 @@ const initialState: AnalyticsState = {
   byChannel: [],
   evolution: [],
   byProduct: [],
+  statusPurchase: []
 };
 
-//
-// --- Slice principal ---
-//
 const analyticsSlice = createSlice({
   name: "analytics",
   initialState,
@@ -65,6 +70,9 @@ const analyticsSlice = createSlice({
     setByProduct(state, action) {
       state.byProduct = action.payload;
     },
+    setStatusPurchase(state, action) {
+      state.statusPurchase = action.payload;
+    }
   },
 });
 
@@ -75,6 +83,7 @@ export const {
   setByChannel,
   setEvolution,
   setByProduct,
+  setStatusPurchase
 } = analyticsSlice.actions;
 
 export default analyticsSlice

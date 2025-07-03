@@ -9,6 +9,7 @@ import {
   type ChannelData,
   type TimePoint,
   type ProductData,
+  setStatusPurchase,
 } from "./analytics";
 
 export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
@@ -62,3 +63,20 @@ export const fetchAnalyticsDemand = (): AppThunk => async (dispatch) => {
     dispatch(setLoading(false));
   }
 };
+
+export const fetchpurchaseStatus = (): AppThunk => async (dispatch) => {
+  dispatch(setLoading(true));
+  dispatch(setError(null));
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/status`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Error al cargar estado de compras");
+    const data = await res.json();
+    dispatch(setStatusPurchase(data));
+  } catch (err: any) {
+    dispatch(setError(err.message));
+  } finally {
+    dispatch(setLoading(false));
+  }
+}

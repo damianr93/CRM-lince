@@ -2,9 +2,6 @@ import type { AppThunk } from "../sotre";
 import { addClient, deleteClient, setClients, setError, setLoading, updateClient, type Client } from "./clients";
 import { toast } from "react-toastify";
 
-
-
-
 export const getClientsThunk = (): AppThunk => {
   return async (dispatch) => {
     dispatch(setLoading(true));

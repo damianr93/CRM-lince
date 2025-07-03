@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,37 +17,53 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { AppDispatch, RootState } from "@/store/sotre";
 import {
-  fetchAnalyticsDemand,
-  fetchAnalyticsEvolution,
   fetchAnalyticsTotales,
+  fetchAnalyticsEvolution,
+  fetchAnalyticsDemand,
+  fetchpurchaseStatus,
 } from "@/store/analytics/thunks";
 
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
 
-interface ChannelData {
-  channel: string;
-  total: number;
-}
-interface TimePoint {
-  date: string; 
-  total: number;
-}
-interface ProductData {
-  product: string;
-  total: number;
-}
+interface ChannelData { channel: string; total: number; }
+interface TimePoint { date: string; total: number; }
+interface ProductData { product: string; total: number; }
+interface StatusPoint { status: string; total: number; percentage: number; }
+
+const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900/95 border border-gold-400/30 rounded-lg p-3 shadow-2xl text-white">
+        <p className="font-medium text-sm mb-1">{label}</p>
+        {payload.map((entry: any, idx: number) => (
+          <p key={idx} className="text-sm">
+            <span className="font-medium">{entry.name}: </span>
+            {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function ClientsDashboard() {
   const dispatch = useDispatch<AppDispatch>();
-
-  const { loading, error, totales, byChannel, evolution, byProduct } = useSelector(
-    (state: RootState) => state.analytics
-  );
+  const {
+    loading,
+    error,
+    totales,
+    byChannel,
+    evolution,
+    byProduct,
+    statusPurchase,
+  } = useSelector((state: RootState) => state.analytics);
 
   useEffect(() => {
     dispatch(fetchAnalyticsTotales());
     dispatch(fetchAnalyticsEvolution());
     dispatch(fetchAnalyticsDemand());
+    dispatch(fetchpurchaseStatus());
   }, [dispatch]);
 
   if (loading) {
@@ -55,7 +73,6 @@ export default function ClientsDashboard() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -66,7 +83,7 @@ export default function ClientsDashboard() {
 
   return (
     <div className="mt-10 min-h-screen p-4 md:p-8 space-y-8">
-
+      {/* Header + total contactos */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
@@ -76,15 +93,17 @@ export default function ClientsDashboard() {
             Contactos, canales de adquisición y productos consultados
           </p>
         </div>
-
         <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardContent className="p-4 flex flex-col items-start sm:items-center">
-            <span className="text-2xl font-bold text-yellow-400">{totales}</span>
+            <span className="text-2xl font-bold text-yellow-400">
+              {totales}
+            </span>
             <span className="text-sm text-neutral-400">Contactos totales</span>
           </CardContent>
         </Card>
       </div>
 
+      {/* Grid de canales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {byChannel.map((c: ChannelData) => (
           <Card
@@ -95,16 +114,19 @@ export default function ClientsDashboard() {
               <span className="text-lg font-semibold text-neutral-200">
                 {c.channel.charAt(0).toUpperCase() + c.channel.slice(1).toLowerCase()}
               </span>
-              <span className="mt-1 text-2xl font-bold text-yellow-400">{c.total}</span>
+              <span className="mt-1 text-2xl font-bold text-yellow-400">
+                {c.total}
+              </span>
               <span className="text-xs text-neutral-400">Contactos</span>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Las cuatro gráficas principales */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
+        {/* 1) Adquisición por Canal */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
               📣 Adquisición por Canal
@@ -141,7 +163,8 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
+        {/* 2) Evolución de Consultas */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
               📈 Evolución de Consultas
@@ -173,24 +196,16 @@ export default function ClientsDashboard() {
                   dataKey="total"
                   stroke="#A44FFF"
                   strokeWidth={3}
-                  dot={{
-                    fill: "#A44FFF",
-                    strokeWidth: 2,
-                    r: 6,
-                  }}
-                  activeDot={{
-                    r: 8,
-                    stroke: "#A44FFF",
-                    strokeWidth: 2,
-                    fill: "#FFD700",
-                  }}
+                  dot={{ r: 6 }}
+                  activeDot={{ r: 8, fill: "#FFD700" }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm shadow-2xl">
+        {/* 3) Productos más Consultados */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
               🛒 Productos más Consultados
@@ -229,24 +244,38 @@ export default function ClientsDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
+
+        {/* 4) Estado de Compras */}
+        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+          <CardHeader className="border-b border-gold-400/20 pb-4">
+            <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+              📊 Estado de Compras
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={statusPurchase as StatusPoint[]}
+                  dataKey="percentage"
+                  nameKey="status"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  label={({ name, percent }) =>
+                    `${name}: ${Math.round(percent * 100)}%`
+                  }
+                >
+                  {(statusPurchase as StatusPoint[]).map((_, idx) => (
+                    <Cell key={`slice-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-
-const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-gray-900/95 border border-gold-400/30 rounded-lg p-3 shadow-2xl">
-        <p className="text-gold-400 font-medium text-sm">{label}</p>
-        {payload.map((entry: any, idx: number) => (
-          <p key={idx} className="text-neutral-100 text-sm">
-            <span className="font-medium">{entry.name}: </span>
-            {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
