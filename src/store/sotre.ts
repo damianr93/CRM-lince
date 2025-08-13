@@ -1,11 +1,13 @@
 import { type ThunkAction, type Action, configureStore } from '@reduxjs/toolkit';
 import clientsSlice from './clients/clients';
 import analyticsSlice from './analytics/analytics';
+import satisfactionsSlice from './satisfaction/satisfaction';
 
 export const store = configureStore({
   reducer: {
     clients: clientsSlice.reducer,
-    analytics: analyticsSlice.reducer
+    analytics: analyticsSlice.reducer,
+    satisfaction: satisfactionsSlice.reducer,
   },
 })
 

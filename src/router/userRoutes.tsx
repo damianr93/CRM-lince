@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "../views/Analisis";
 import ClientsViewer from "@/views/Clients";
+import SatisfactionDashboard from "@/views/satisfactions";
 
 export const UserRoutes = () => {
   return (
@@ -12,6 +13,7 @@ export const UserRoutes = () => {
         <Routes>
           <Route path="home" element={<Dashboard />} />
           <Route path="clientes" element={<ClientsViewer />} />
+          <Route path="satisfaccion" element={<SatisfactionDashboard />} />
         </Routes>
       </div>
     </>
