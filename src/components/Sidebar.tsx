@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const navItems = [
     { label: 'Análisis', icon: <BarChart2 size={20} />, path: '/home' },
     { label: 'Clientes', icon: <Users size={20} />, path: '/clientes' },
+    { label: 'Satisfaccion de clientes', icon: <Users size={20} />, path: '/satisfaccion' },
 ]
 
 export default function Sidebar() {
