@@ -166,8 +166,11 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                                 className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                             >
                                 <option value="PENDIENTE">PENDIENTE</option>
+                                <option value="NO_CONTESTO">NO CONTESTO</option>
+                                <option value="DERIVADO_A_DISTRIBUIDOR">DERIVADO A DISTRIBUIDOR</option>
+                                <option value="SE_COTIZO_Y_PENDIENTE">SE COTIZO Y ESTA PENDIENTE</option>
+                                <option value="SE_COTIZO_Y_NO_INTERESO">SE COTIZO Y NO LE INTERESO</option>
                                 <option value="COMPRO">COMPRO</option>
-                                <option value="NO_COMPRO">NO_COMPRO</option>
                             </select>
                         </div>
 

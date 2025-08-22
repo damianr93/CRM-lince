@@ -283,9 +283,9 @@ export default function CustomTable<T extends RowData>({
   /** Opciones para selects en ciertos campos */
   const actividades = ["CRIA", "RECRIA", "MIXTO", "DISTRIBUIDOR"];
   const medios = ["INSTAGRAM", "WEB", "WHATSAPP", "FACEBOOK", "OTRO"];
-  const estados = ["PENDIENTE", "COMPRO", "NO_COMPRO"];
+  const estados = ['PENDIENTE' ,'NO_CONTESTO' , 'SE_COTIZO_Y_PENDIENTE' , 'SE_COTIZO_Y_NO_INTERESO' , 'DERIVADO_A_DISTRIBUIDOR', 'COMPRO'];
 
-  /** Formatear ISO a "YYYY/MM/DD" usando UTC  */
+  /** Formatear ISO a "YYYY/MM/DD" usando UTC  */ 
   const formatDateDisplay = (isoString: string) => {
     const d = new Date(isoString);
     const yyyy = d.getUTCFullYear();
