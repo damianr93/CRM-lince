@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/store/sotre"; 
+import type { AppDispatch, RootState } from "@/store/sotre";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   BarChart,
@@ -307,6 +307,8 @@ export default function SatisfactionDashboard() {
             <table className="min-w-full text-sm text-neutral-200">
               <thead className="bg-gray-800/70">
                 <tr className="text-left">
+                  <th className="px-3 py-2">Nombre / Razón Social</th>
+                  {/* 👈 nueva columna */}
                   <th className="px-3 py-2">Producto</th>
                   <th className="px-3 py-2">Teléfono</th>
                   <th className="px-3 py-2">Conocimiento</th>
@@ -327,6 +329,8 @@ export default function SatisfactionDashboard() {
                     key={(r._id || r.id) as string}
                     className="border-t border-gray-700/40 hover:bg-gray-800/40"
                   >
+                    <td className="px-3 py-2">{r.name || "-"}</td>
+                    {/* 👈 nuevo dato */}
                     <td className="px-3 py-2">{r.product || "-"}</td>
                     <td className="px-3 py-2">{r.phone || "-"}</td>
                     <td className="px-3 py-2">{r.comoNosConocio || "-"}</td>
@@ -366,7 +370,7 @@ export default function SatisfactionDashboard() {
                 {!pageData.length && (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12} // 👈 sumado 1 por la nueva columna
                       className="px-3 py-6 text-center text-neutral-400"
                     >
                       Sin resultados para la búsqueda

@@ -22,6 +22,7 @@ export type Valoracion =
 export interface Satisfaction {
   _id?: string;
   id?: string; // por si tu toJSON setea 'id'
+  name?:string;
   phone?: string;
   product?: string;
   comoNosConocio?: MedioConocimiento;
