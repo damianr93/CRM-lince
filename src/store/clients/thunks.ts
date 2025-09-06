@@ -1,6 +1,5 @@
 import type { AppThunk } from "../sotre";
 import { addClient, deleteClient, setClients, setError, setLoading, updateClient, type Client } from "./clients";
-import { toast } from "react-toastify";
 
 export const getClientsThunk = (): AppThunk => {
   return async (dispatch) => {
@@ -24,7 +23,7 @@ export const getClientsThunk = (): AppThunk => {
     } catch (error: any) {
       console.error(error);
       dispatch(setError(error.message));
-      toast.error(error.message, { position: "top-right" });
+      // Las notificaciones se manejarán en el componente
     } finally {
       dispatch(setLoading(false));
     }
@@ -51,11 +50,9 @@ export const postClientThunk = (
       }
       const newClient: Client = await res.json();
       dispatch(addClient(newClient));
-      toast.success("Cliente creado correctamente", { position: "top-right" });
       return newClient;
     } catch (err: any) {
       dispatch(setError(err.message));
-      toast.error(err.message, { position: "top-right" });
       throw err;
     } finally {
       dispatch(setLoading(false));
@@ -85,11 +82,9 @@ export const updateClientThunk = (
       }
       const updatedClient: Client = await res.json();
       dispatch(updateClient(updatedClient));
-      toast.success("Cliente actualizado correctamente", { position: "top-right" });
       return updatedClient;
     } catch (err: any) {
       dispatch(setError(err.message));
-      toast.error(err.message, { position: "top-right" });
       throw err;
     } finally {
       dispatch(setLoading(false));
@@ -126,16 +121,9 @@ export const updateClientFieldThunk = (payload: {
 
       dispatch(updateClient(updatedClient));
       
-      toast.success(`${payload.field} actualizado correctamente`, { 
-        position: "top-right",
-      });
-      
       return updatedClient;
     } catch (err: any) {
       dispatch(setError(err.message));
-      toast.error(`Error al actualizar ${payload.field}: ${err.message}`, { 
-        position: "top-right" 
-      });
       throw err;
     } finally {
       dispatch(setLoading(false));
@@ -159,10 +147,8 @@ export const deleteClientThunk = (clientId: string): AppThunk => {
         throw new Error(errData.message || "Error al eliminar cliente");
       }
       dispatch(deleteClient({ id: clientId }));
-      toast.success("Cliente eliminado correctamente", { position: "top-right" });
     } catch (err: any) {
       dispatch(setError(err.message));
-      toast.error(err.message, { position: "top-right" });
     } finally {
       dispatch(setLoading(false));
     }

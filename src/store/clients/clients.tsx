@@ -9,8 +9,8 @@ export interface Client {
   apellido?: string;
   telefono?: string;
   correo?: string;
-  cabezas?: number;
-  mesesSuplemento?: number;
+  cabezas?: string;
+  mesesSuplemento?: string;
   producto?: string;
   localidad?: string;
   actividad?: "CRIA" | "RECRIA" | "MIXTO" | "DISTRIBUIDOR";

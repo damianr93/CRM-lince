@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { SaveIcon, XIcon } from "lucide-react";
+import { formatDisplayValue } from "../utils/dataCleaner";
 
 export interface Column {
   field: string;
@@ -70,7 +71,34 @@ export default function CustomTable<T extends RowData>({
 
   /** ========== Anchos dinámicos ========== */
   const totalCols = columns.length + (actions ? 1 : 0);
-  const [widths, setWidths] = useState<number[]>(Array.from({ length: totalCols }, () => 150));
+  const [widths, setWidths] = useState<number[]>(() => {
+    // Anchos específicos por tipo de columna
+    return columns.map(col => {
+      switch (col.field) {
+        case 'nombre':
+        case 'apellido':
+        case 'producto':
+        case 'localidad':
+          return 180;
+        case 'telefono':
+        case 'correo':
+          return 160;
+        case 'cabezas':
+        case 'mesesSuplemento':
+          return 100;
+        case 'actividad':
+        case 'estado':
+        case 'siguiendo':
+          return 140;
+        case 'observaciones':
+          return 200;
+        case 'createdAt':
+          return 120;
+        default:
+          return 150;
+      }
+    }).concat(actions ? [120] : []); // Ancho para columna de acciones
+  });
 
   /** Refs para resize */
   const startXRef = useRef<number>(0);
@@ -85,10 +113,37 @@ export default function CustomTable<T extends RowData>({
   useEffect(() => {
     setTableData(data);
     setPage(0);
-    setWidths(Array.from({ length: totalCols }, () => 150));
+    // Reiniciar anchos con valores específicos por columna
+    setWidths(() => {
+      return columns.map(col => {
+        switch (col.field) {
+          case 'nombre':
+          case 'apellido':
+          case 'producto':
+          case 'localidad':
+            return 180;
+          case 'telefono':
+          case 'correo':
+            return 160;
+          case 'cabezas':
+          case 'mesesSuplemento':
+            return 100;
+          case 'actividad':
+          case 'estado':
+          case 'siguiendo':
+            return 140;
+          case 'observaciones':
+            return 200;
+          case 'createdAt':
+            return 120;
+          default:
+            return 150;
+        }
+      }).concat(actions ? [120] : []);
+    });
     setSortField(null);
     setSortDirection(null);
-  }, [data, totalCols]);
+  }, [data, totalCols, columns, actions]);
 
   useEffect(() => {
     setPage(0);
@@ -200,7 +255,7 @@ export default function CustomTable<T extends RowData>({
   const onMouseMove = (e: MouseEvent) => {
     if (activeColRef.current < 0) return;
     const deltaX = e.clientX - startXRef.current;
-    const newWidth = Math.max(startWidthRef.current + deltaX, 50);
+    const newWidth = Math.max(startWidthRef.current + deltaX, 80); // Ancho mínimo más razonable
     setWidths((prev) => {
       const copy = [...prev];
       copy[activeColRef.current] = newWidth;
@@ -404,7 +459,7 @@ export default function CustomTable<T extends RowData>({
       </div>
 
       {/* ============== TABLA ============== */}
-      <div className="overflow-x-auto overflow-y-visible border border-gray-200 rounded">
+      <div className="overflow-x-auto border border-gray-200 rounded">
         <table className="table-fixed w-full text-left border-collapse">
           <thead className="bg-gray-800">
             <tr>
@@ -470,7 +525,7 @@ export default function CustomTable<T extends RowData>({
               const isEven = rowIndex % 2 === 0;
               return (
                 <tr key={rowIndex} className={isEven ? "bg-gray-50" : "bg-white"}>
-                  {columns.map((col) => {
+                  {columns.map((col, colIndex) => {
                     const isEditingThis =
                       editingCell?.rowIndex === rowIndex && editingCell.field === col.field;
 
@@ -483,10 +538,17 @@ export default function CustomTable<T extends RowData>({
                       rawValue = row[col.field] ?? "-";
                     }
 
+                    // Limpiar y formatear el valor para mostrar
+                    let displayValue: any = formatDisplayValue(rawValue, col.field);
+                    
                     // Si es createdAt, formatear para mostrar
-                    let displayValue: any = rawValue;
-                    if (col.field === "createdAt" && rawValue !== "-") {
+                    if (col.field === "createdAt" && rawValue !== "-" && rawValue) {
                       displayValue = formatDateDisplay(rawValue);
+                    }
+
+                    // Si es observaciones, truncar si es muy largo
+                    if (col.field === "observaciones" && displayValue !== "-" && displayValue && displayValue.length > 50) {
+                      displayValue = displayValue.substring(0, 50) + "...";
                     }
 
                     return (
@@ -497,7 +559,13 @@ export default function CustomTable<T extends RowData>({
                             : col.align === "right"
                               ? "text-right"
                               : "text-left"
-                          } overflow-visible relative z-10`}
+                          } relative z-10`}
+                        style={{ 
+                          maxWidth: widths[colIndex],
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
                         onDoubleClick={() => handleCellDoubleClick(rowIndex, col.field)}
                       >
                         {isEditingThis ? (
@@ -512,12 +580,12 @@ export default function CustomTable<T extends RowData>({
                               />
                             )}
 
-                            {/* ====== Campo numérico ====== */}
+                            {/* ====== Campo de texto (cabezas y meses) ====== */}
                             {(col.field === "cabezas" || col.field === "mesesSuplemento") && (
                               <input
-                                type="number"
+                                type="text"
                                 value={editingValue}
-                                onChange={(e) => setEditingValue(Number(e.target.value))}
+                                onChange={(e) => setEditingValue(e.target.value)}
                                 className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               />
                             )}
@@ -582,6 +650,17 @@ export default function CustomTable<T extends RowData>({
                               </select>
                             )}
 
+                            {/* ====== Campo "observaciones" (textarea) ====== */}
+                            {col.field === "observaciones" && (
+                              <textarea
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+                                rows={3}
+                                placeholder="Agregar observaciones..."
+                              />
+                            )}
+
                             {/* ====== Texto estándar ====== */}
                             {!(
                               col.field === "createdAt" ||
@@ -590,7 +669,8 @@ export default function CustomTable<T extends RowData>({
                               col.field === "actividad" ||
                               col.field === "medioAdquisicion" ||
                               col.field === "estado" ||
-                              col.field === "siguiendo"
+                              col.field === "siguiendo" ||
+                              col.field === "observaciones"
                             ) && (
                                 <input
                                   type="text"
@@ -614,7 +694,15 @@ export default function CustomTable<T extends RowData>({
                             />
                           </div>
                         ) : (
-                          displayValue
+                          <div 
+                            className={`cursor-help ${rawValue !== "-" && rawValue && rawValue !== displayValue ? "text-blue-600" : ""}`}
+                            title={rawValue !== "-" && rawValue && rawValue !== displayValue ? rawValue : undefined}
+                          >
+                            {displayValue}
+                            {rawValue !== "-" && rawValue && rawValue !== displayValue && (
+                              <span className="text-gray-400 ml-1">⋯</span>
+                            )}
+                          </div>
                         )}
                       </td>
                     );

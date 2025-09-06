@@ -12,15 +12,19 @@ import {
 } from "@/store/clients/thunks";
 import type { AppDispatch, RootState } from "@/store/sotre";
 import ClientFormModal from "@/forms/ClientsFormsModal";
+import { useNotificationHelpers } from "@/components/NotificationSystem";
+import { cleanClientData } from "@/utils/dataCleaner";
 
 export default function ClientsViewer() {
   const dispatch = useDispatch<AppDispatch>();
   const { clients, loading, error } = useSelector(
     (state: RootState) => state.clients
   );
+  const { showSuccess, showError } = useNotificationHelpers();
 
   const columns: Column[] = [
     { field: "nombre", headerName: "Nombre", align: "left" },
+    { field: "apellido", headerName: "Apellido", align: "left" },
     { field: "telefono", headerName: "Teléfono", align: "center" },
     { field: "cabezas", headerName: "Cabezas", align: "right" },
     { field: "mesesSuplemento", headerName: "Meses Supl.", align: "right" },
@@ -29,6 +33,8 @@ export default function ClientsViewer() {
     { field: "actividad", headerName: "Actividad", align: "center" },
     { field: "estado", headerName: "Estado", align: "center" },
     { field: "siguiendo", headerName: "Siguiendo", align: "left" },
+    { field: "observaciones", headerName: "Observaciones", align: "left" },
+    { field: "correo", headerName: "Email", align: "left" },
     { field: "createdAt", headerName: "Creado el", align: "center" },
   ];
 
@@ -56,8 +62,8 @@ export default function ClientsViewer() {
     apellido: "",
     telefono: "",
     correo: "",
-    cabezas: 0,
-    mesesSuplemento: 1,
+    cabezas: "",
+    mesesSuplemento: "",
     producto: "",
     localidad: "",
     actividad: "CRIA",
@@ -68,8 +74,15 @@ export default function ClientsViewer() {
   });
 
   useEffect(() => {
-    dispatch(getClientsThunk());
-  }, [dispatch]);
+    const loadClients = async () => {
+      try {
+        await dispatch(getClientsThunk());
+      } catch (error: any) {
+        showError("Error al cargar clientes", error.message || "No se pudieron cargar los clientes");
+      }
+    };
+    loadClients();
+  }, [dispatch, showError]);
 
   const openAddModal = () => {
     setCurrentClient({
@@ -78,8 +91,8 @@ export default function ClientsViewer() {
       apellido: "",
       telefono: "",
       correo: "",
-      cabezas: 0,
-      mesesSuplemento: 1,
+      cabezas: "",
+      mesesSuplemento: "",
       producto: "",
       localidad: "",
       actividad: "CRIA",
@@ -106,37 +119,56 @@ export default function ClientsViewer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEditing) {
-      await dispatch(updateClientThunk(currentClient));
-    } else {
-      const { id, createdAt, updatedAt, ...payload } = currentClient;
-      await dispatch(postClientThunk(payload));
+    try {
+      if (isEditing) {
+        await dispatch(updateClientThunk(currentClient));
+        showSuccess("Cliente actualizado", "El cliente se ha actualizado correctamente");
+      } else {
+        const { id, createdAt, updatedAt, ...payload } = currentClient;
+        await dispatch(postClientThunk(payload));
+        showSuccess("Cliente creado", "El cliente se ha creado correctamente");
+      }
+      setIsOpen(false);
+    } catch (error: any) {
+      showError(
+        isEditing ? "Error al actualizar cliente" : "Error al crear cliente",
+        error.message || "Ha ocurrido un error inesperado"
+      );
     }
-    setIsOpen(false);
   };
 
-  const handleActionClick = (action: Action, row: Client) => {
+  const handleActionClick = async (action: Action, row: Client) => {
     if (action.name === "editar") {
       openEditModal(row);
     } else if (action.name === "eliminar") {
       const rowId = row.id ? row.id : row._id!;
-      dispatch(deleteClientThunk(rowId));
+      try {
+        await dispatch(deleteClientThunk(rowId));
+        showSuccess("Cliente eliminado", "El cliente se ha eliminado correctamente");
+      } catch (error: any) {
+        showError("Error al eliminar cliente", error.message || "No se pudo eliminar el cliente");
+      }
     }
   };
 
-  const handleCellSave = (
+  const handleCellSave = async (
     rowId: string | number,
     field: keyof Client,
     value: any
   ) => {
     const clientId = typeof rowId === "string" ? rowId : String(rowId);
-    dispatch(
-      updateClientFieldThunk({
-        id: clientId,
-        field: field as string,
-        value: value,
-      })
-    );
+    try {
+      await dispatch(
+        updateClientFieldThunk({
+          id: clientId,
+          field: field as string,
+          value: value,
+        })
+      );
+      showSuccess("Campo actualizado", `${field} se ha actualizado correctamente`);
+    } catch (error: any) {
+      showError("Error al actualizar campo", error.message || `No se pudo actualizar ${field}`);
+    }
   };
 
   const handleDownloadExcel = async () => {
@@ -167,9 +199,10 @@ export default function ClientsViewer() {
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-    } catch (err) {
+      showSuccess("Excel descargado", "El archivo Excel se ha descargado correctamente");
+    } catch (err: any) {
       console.error("No se pudo descargar el Excel:", err);
-      alert("Ocurrió un error al descargar el Excel. Revisa consola.");
+      showError("Error al descargar Excel", err.message || "Ocurrió un error al descargar el archivo Excel");
     }
   };
 
@@ -212,7 +245,7 @@ export default function ClientsViewer() {
 
       <CustomTable<Client>
         columns={columns}
-        data={clients || []}
+        data={(clients || []).map(cleanClientData)}
         actions={actions}
         onActionClick={handleActionClick}
         onSaveCell={handleCellSave}

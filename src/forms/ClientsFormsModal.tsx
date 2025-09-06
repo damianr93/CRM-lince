@@ -100,20 +100,20 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             <div>
                                 <label className="text-gray-700 font-medium block mb-2">Cabezas</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     placeholder="Cabezas"
                                     value={currentClient.cabezas}
-                                    onChange={(e) => onChange("cabezas", Number(e.target.value))}
+                                    onChange={(e) => onChange("cabezas", e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
                             </div>
                             <div>
                                 <label className="text-gray-700 font-medium block mb-2">Meses</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     placeholder="Meses Supl."
                                     value={currentClient.mesesSuplemento}
-                                    onChange={(e) => onChange("mesesSuplemento", Number(e.target.value))}
+                                    onChange={(e) => onChange("mesesSuplemento", e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
                             </div>
