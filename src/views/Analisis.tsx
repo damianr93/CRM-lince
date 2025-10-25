@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   BarChart,
@@ -16,11 +16,14 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { AppDispatch, RootState } from "@/store/sotre";
+import type { FollowUpEvent } from "@/store/analytics/analytics";
 import {
   fetchAnalyticsTotales,
   fetchAnalyticsEvolution,
   fetchAnalyticsDemand,
   fetchpurchaseStatus,
+  fetchFollowUpEvents,
+  completeFollowUpEvent,
 } from "@/store/analytics/thunks";
 
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
@@ -47,6 +50,22 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   return null;
 };
 
+
+
+const formatDateTime = (isoDate: string) => {
+  try {
+    return new Intl.DateTimeFormat("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(isoDate));
+  } catch (error) {
+    return isoDate;
+  }
+};
+
 export default function ClientsDashboard() {
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -57,7 +76,40 @@ export default function ClientsDashboard() {
     evolution,
     byProduct,
     statusPurchase,
+    followUpEvents,
   } = useSelector((state: RootState) => state.analytics);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"READY" | "COMPLETED">("READY");
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "READY" as const, label: "Pendientes" },
+      { value: "COMPLETED" as const, label: "Realizados" },
+    ],
+    [],
+  );
+
+  const filteredEvents = useMemo(
+    () =>
+      (followUpEvents as FollowUpEvent[]).filter((event) =>
+        statusFilter === "READY" ? event.status === "READY" : event.status === "COMPLETED",
+      ),
+    [followUpEvents, statusFilter],
+  );
+
+  const assigneeOptions = useMemo(() => {
+    const defaults = ["ALL", "EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
+    const dynamic = (followUpEvents as FollowUpEvent[]).map((event) =>
+      event.assignedTo ? event.assignedTo.toUpperCase() : "SIN_ASIGNAR",
+    );
+    return Array.from(new Set([...defaults, ...dynamic]));
+  }, [followUpEvents]);
+
+  const statusLabel = useMemo(
+    () => statusOptions.find((option) => option.value === statusFilter)?.label ?? "Pendientes",
+    [statusOptions, statusFilter],
+  );
 
   useEffect(() => {
     dispatch(fetchAnalyticsTotales());
@@ -66,6 +118,57 @@ export default function ClientsDashboard() {
     dispatch(fetchpurchaseStatus());
   }, [dispatch]);
 
+  useEffect(() => {
+    const normalizedAssignee = assigneeFilter.toUpperCase();
+    dispatch(
+      fetchFollowUpEvents(
+        normalizedAssignee === "ALL" ? undefined : normalizedAssignee,
+        statusFilter,
+      ),
+    );
+  }, [dispatch, assigneeFilter, statusFilter]);
+
+  const handleAssigneeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setAssigneeFilter(event.target.value.toUpperCase());
+  };
+
+  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(event.target.value as "READY" | "COMPLETED");
+  };
+
+  const handleComplete = async (eventId: string) => {
+    try {
+      setCompletingId(eventId);
+      const normalized = assigneeFilter.toUpperCase();
+      await dispatch(
+        completeFollowUpEvent(
+          eventId,
+          normalized === "ALL" ? undefined : normalized,
+          statusFilter,
+        ),
+      );
+    } catch (error) {
+      // El error ya se guarda en el estado global
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
+
+  const formatAssigneeLabel = (value: string): string => {
+    if (!value) {
+      return "Sin asignar";
+    }
+    const upper = value.toUpperCase();
+    if (upper === "ALL") {
+      return "Todos";
+    }
+    return upper
+      .split("_")
+      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+      .join(" ")
+      .trim();
+  };
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -87,10 +190,10 @@ export default function ClientsDashboard() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
-            CRM · Visión General
+            CRM  Visin General
           </h1>
           <p className="text-neutral-300 text-lg">
-            Contactos, canales de adquisición y productos consultados
+            Contactos, canales de adquisicion y productos consultados
           </p>
         </div>
         <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
@@ -123,13 +226,13 @@ export default function ClientsDashboard() {
         ))}
       </div>
 
-      {/* Las cuatro gráficas principales */}
+      {/* Las cuatro graficas principales */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* 1) Adquisición por Canal */}
+        {/* 1) Adquisicion por Canal */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              📣 Adquisición por Canal
+              Adquisicion por Canal
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -163,11 +266,11 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
 
-        {/* 2) Evolución de Consultas */}
+        {/* 2) Evolucion de Consultas */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              📈 Evolución de Consultas
+              Evolucion de Consultas
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -204,11 +307,11 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
 
-        {/* 3) Productos más Consultados */}
+        {/* 3) Productos mas Consultados */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              🛒 Productos más Consultados
+              Productos mas Consultados
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -249,7 +352,7 @@ export default function ClientsDashboard() {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              📊 Estado de Compras
+              Estado de Compras
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -276,6 +379,173 @@ export default function ClientsDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-md">
+        <CardHeader className="border-b border-gold-400/20 pb-4">
+          <CardTitle className="text-xl font-bold text-yellow-400 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/15 text-yellow-300 ring-2 ring-yellow-500/40">
+                SMS
+              </span>
+              <div className="flex flex-col">
+                <span>Eventos de Seguimiento Manual</span>
+                <span className="text-sm font-normal text-neutral-400">
+                  {statusFilter === "READY"
+                    ? "Seguimientos listos para que el vendedor contacte al cliente."
+                    : "Seguimientos ya realizados disponibles como referencia rapida."}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col md:items-end">
+              <span className="text-xs uppercase tracking-widest text-neutral-500">
+                {statusLabel}
+              </span>
+              <span className="text-3xl font-semibold text-yellow-300">
+                {filteredEvents.length}
+              </span>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="flex flex-col gap-3 border-b border-gold-400/10 bg-gray-900/60 px-6 py-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs text-neutral-300 md:max-w-2xl">
+              El envio automatico esta pausado. Cuando un estado active un seguimiento, se envia un correo a la persona responsable y el evento queda disponible en esta lista.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-300">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold uppercase tracking-widest text-neutral-400">
+                  Responsable
+                </span>
+                <select
+                  value={assigneeFilter}
+                  onChange={handleAssigneeChange}
+                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                >
+                  {assigneeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {formatAssigneeLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold uppercase tracking-widest text-neutral-400">
+                  Mostrar
+                </span>
+                <select
+                  value={statusFilter}
+                  onChange={handleStatusChange}
+                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          {filteredEvents.length === 0 ? (
+            <div className="p-8 text-neutral-400 text-sm">
+              {statusFilter === "READY"
+                ? "No hay eventos listos para ejecutar. Los cambios de estado apareceran aqui cuando llegue su horario de seguimiento."
+                : "No hay eventos realizados dentro de este filtro."}
+            </div>
+          ) : (
+            <div className="max-h-[460px] overflow-y-auto px-6 py-6 pr-4 scrollbar-thin scrollbar-thumb-yellow-500/40 scrollbar-track-transparent space-y-4">
+              {filteredEvents.map((event) => {
+                const fullName = [event.customerName, event.customerLastName]
+                  .filter(Boolean)
+                  .join(" ") || "Cliente sin nombre";
+                const phoneNumber = event.customerPhone ??
+                  (typeof event.contactValue === "string" && !event.contactValue.includes("@")
+                    ? event.contactValue
+                    : null);
+                const isCompleting = completingId === event.id;
+                const isCompletedView = statusFilter === "COMPLETED";
+                const completedAtDisplay =
+                  isCompletedView && event.completedAt ? formatDateTime(event.completedAt) : null;
+
+                return (
+                  <div
+                    key={event.id}
+                    className="rounded-xl border border-yellow-500/30 bg-gray-900/80 p-4 shadow-lg shadow-yellow-500/5 transition hover:border-yellow-400/60 hover:shadow-yellow-500/20"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                          Programado
+                        </p>
+                        <p className="text-sm font-semibold text-yellow-200">
+                          {formatDateTime(event.scheduledFor)}
+                        </p>
+                        {completedAtDisplay ? (
+                          <p className="text-xs text-neutral-400 mt-1">
+                            Realizado el {completedAtDisplay}
+                          </p>
+                        ) : null}
+                      </div>
+                      {statusFilter === "READY" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleComplete(event.id)}
+                          disabled={isCompleting}
+                          className="inline-flex items-center gap-2 rounded-md border border-emerald-400/50 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isCompleting ? "Marcando..." : "Marcar como realizado"}
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                          Realizado
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                          Cliente
+                        </p>
+                        <p className="text-sm text-neutral-100 break-words">
+                          {fullName}
+                        </p>
+                        {phoneNumber ? (
+                          <p className="text-xs text-neutral-400 mt-1">Tel: {phoneNumber}</p>
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                          Producto
+                        </p>
+                        <p className="text-sm text-neutral-200 break-words">
+                          {event.product ?? "Sin especificar"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-lg border border-white/5 bg-gray-950/60 p-4">
+                      <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2">
+                        Mensaje sugerido
+                      </p>
+                      <p className="text-sm text-neutral-200 whitespace-pre-line leading-relaxed">
+                        {event.message}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
     </div>
   );
 }
+
+
+
+
+

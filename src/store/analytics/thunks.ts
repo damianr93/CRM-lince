@@ -10,6 +10,8 @@ import {
   type TimePoint,
   type ProductData,
   setStatusPurchase,
+  setFollowUpEvents,
+  type FollowUpEvent,
 } from "./analytics";
 
 export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
@@ -80,3 +82,65 @@ export const fetchpurchaseStatus = (): AppThunk => async (dispatch) => {
     dispatch(setLoading(false));
   }
 }
+
+export const fetchFollowUpEvents = (
+  assignedTo?: string,
+  status: "READY" | "COMPLETED" = "READY",
+): AppThunk => async (dispatch) => {
+  dispatch(setError(null));
+  try {
+    const params = new URLSearchParams();
+    const normalizedAssignee = assignedTo?.toUpperCase();
+    if (normalizedAssignee && normalizedAssignee !== "ALL") {
+      params.set("assignedTo", normalizedAssignee);
+    }
+    if (status) {
+      params.set("status", status);
+    }
+    const query = params.toString();
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/analytics/follow-up-events${query ? `?${query}` : ""}`,
+      {
+        credentials: "include",
+      },
+    );
+    if (!res.ok) throw new Error("Error al cargar eventos de seguimiento");
+    const data: FollowUpEvent[] = await res.json();
+    dispatch(setFollowUpEvents(data));
+  } catch (err: any) {
+    dispatch(setError(err.message));
+  }
+};
+
+export const completeFollowUpEvent =
+  (
+    eventId: string,
+    assignedTo?: string,
+    status: "READY" | "COMPLETED" = "READY",
+  ): AppThunk<Promise<void>> =>
+  async (dispatch) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/follow-up/events/${eventId}/status`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "COMPLETED" }),
+        },
+      );
+      if (!res.ok) throw new Error("No se pudo marcar el seguimiento como realizado");
+      const normalizedAssignee = assignedTo?.toUpperCase();
+      await dispatch(
+        fetchFollowUpEvents(
+          normalizedAssignee && normalizedAssignee !== "ALL" ? normalizedAssignee : undefined,
+          status,
+        ),
+      );
+    } catch (err: any) {
+      dispatch(setError(err.message));
+      throw err;
+    }
+  };

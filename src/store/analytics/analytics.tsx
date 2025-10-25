@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+﻿import { createSlice } from "@reduxjs/toolkit";
 
 export interface ChannelData {
   channel: string;
@@ -21,6 +21,26 @@ export interface ProductData {
   total: number;
 }
 
+export interface FollowUpEvent {
+  id: string;
+  customerName?: string;
+  customerLastName?: string;
+  assignedTo?: string;
+  customerPhone?: string | null;
+  product?: string;
+  triggerStatus: string;
+  templateId: string;
+  message: string;
+  channels: string[];
+  contactValue?: string | null;
+  scheduledFor: string;
+  status: 'SCHEDULED' | 'READY' | 'COMPLETED' | 'CANCELLED';
+  readyAt?: string | null;
+  createdAt?: string;
+  completedAt?: string | null;
+  notes?: string | null;
+}
+
 interface AnalyticsState {
   loading: boolean;
   error: string | null;
@@ -28,7 +48,8 @@ interface AnalyticsState {
   byChannel: ChannelData[];       
   evolution: TimePoint[];        
   byProduct: ProductData[];
-  statusPurchase: StatusPoint[]
+  statusPurchase: StatusPoint[];
+  followUpEvents: FollowUpEvent[];
 }
 
 const initialState: AnalyticsState = {
@@ -38,14 +59,15 @@ const initialState: AnalyticsState = {
   byChannel: [],
   evolution: [],
   byProduct: [],
-  statusPurchase: []
+  statusPurchase: [],
+  followUpEvents: [],
 };
 
 const analyticsSlice = createSlice({
   name: "analytics",
   initialState,
   reducers: {
-    // para indicar que arrancó una carga
+    // para indicar que arrancÃ³ una carga
     setLoading(state, action) {
       state.loading = action.payload;
     },
@@ -62,7 +84,7 @@ const analyticsSlice = createSlice({
     setByChannel(state, action) {
       state.byChannel = action.payload;
     },
-    // para guardar la evolución mensual
+    // para guardar la evoluciÃ³n mensual
     setEvolution(state, action) {
       state.evolution = action.payload;
     },
@@ -72,6 +94,9 @@ const analyticsSlice = createSlice({
     },
     setStatusPurchase(state, action) {
       state.statusPurchase = action.payload;
+    },
+    setFollowUpEvents(state, action) {
+      state.followUpEvents = action.payload;
     }
   },
 });
@@ -83,7 +108,10 @@ export const {
   setByChannel,
   setEvolution,
   setByProduct,
-  setStatusPurchase
+  setStatusPurchase,
+  setFollowUpEvents
 } = analyticsSlice.actions;
 
 export default analyticsSlice
+
+

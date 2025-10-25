@@ -356,9 +356,16 @@ export default function SatisfactionDashboard() {
                     <td className="px-3 py-2">{r.anteInconvenientes || "-"}</td>
                     <td className="px-3 py-2">{r.valoracion || "-"}</td>
                     <td className="px-3 py-2">
-                      {r.comentarios && r.comentarios.trim() !== ""
-                        ? r.comentarios
-                        : "-"}
+                      {r.comentarios && r.comentarios.trim() !== "" ? (
+                        <div
+                          className="max-w-xs truncate text-neutral-100 cursor-help"
+                          title={r.comentarios}
+                        >
+                          {r.comentarios}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       {r.createdAt
