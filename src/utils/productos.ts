@@ -1,0 +1,21 @@
+export const productosLince = [
+  { name: "Bloque de Melaza Pipo - Bovino", type: "Producto" },
+  { name: "Bloque de Melaza Pipo - Ovino", type: "Producto" },
+  { name: "Levadura Deshidratada Tulev", type: "Producto" },
+  { name: "Mela Dry", type: "Producto" },
+  { name: "Concentrado de Proteína de Soja - Feed Grade", type: "Producto" },
+  { name: "Fósforo de Origen Vegetal", type: "Producto" },
+
+  { name: "Levadura de Cerveza", type: "Subproducto" },
+  { name: "Solubles de Destilería Concentrados", type: "Subproducto" },
+  { name: "Melaza de Caña", type: "Subproducto" },
+  { name: "Gluten Feed", type: "Subproducto" },
+  { name: "Burlanda de Maíz", type: "Subproducto" },
+  { name: "Malta Húmeda", type: "Subproducto" },
+  { name: "Cáscara de Citrus", type: "Subproducto" },
+  { name: "Germen de Maíz", type: "Subproducto" },
+  { name: "Burlanda de Maíz (Seco)", type: "Subproducto" },
+  { name: "Lex de Maíz Pellet", type: "Subproducto" },
+  { name: "Gluten Feed Pellet", type: "Subproducto" },
+  { name: "Trigo Pellet", type: "Subproducto" },
+];
