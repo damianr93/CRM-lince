@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { SaveIcon, XIcon } from "lucide-react";
 import { formatDisplayValue } from "../utils/dataCleaner";
+import ProductSelect from "./ProductSelect";
 
 export interface Column {
   field: string;
@@ -308,6 +309,8 @@ export default function CustomTable<T extends RowData>({
         if (field === "createdAt") {
           // convertir de "YYYY-MM-DD" a ISO
           newValue = new Date(editingValue + "T00:00:00Z").toISOString();
+        } else if (field === "producto" && typeof editingValue === "string") {
+          newValue = editingValue.trim();
         }
         updated[realIdx] = { ...updated[realIdx], [field]: newValue };
       }
@@ -320,6 +323,8 @@ export default function CustomTable<T extends RowData>({
       let emittedValue = editingValue;
       if (field === "createdAt") {
         emittedValue = new Date(editingValue + "T00:00:00Z").toISOString();
+      } else if (field === "producto" && typeof editingValue === "string") {
+        emittedValue = editingValue.trim();
       }
       onSaveCell(identifier, field as keyof T, emittedValue);
     }
@@ -562,14 +567,15 @@ export default function CustomTable<T extends RowData>({
                           } relative z-10`}
                         style={{ 
                           maxWidth: widths[colIndex],
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          overflow: isEditingThis ? 'visible' : 'hidden',
+                          textOverflow: isEditingThis ? 'clip' : 'ellipsis',
+                          whiteSpace: isEditingThis ? 'normal' : 'nowrap',
+                          backgroundColor: isEditingThis ? '#ffffff' : undefined
                         }}
                         onDoubleClick={() => handleCellDoubleClick(rowIndex, col.field)}
                       >
                         {isEditingThis ? (
-                          <div className="relative w-full">
+                          <div className="relative z-20 w-full bg-white rounded-md shadow-sm">
                             {/* ====== Campo "createdAt" ====== */}
                             {col.field === "createdAt" && (
                               <input
@@ -661,7 +667,16 @@ export default function CustomTable<T extends RowData>({
                               />
                             )}
 
-                            {/* ====== Texto estándar ====== */}
+                            {/* ====== Campo "producto" (seleccion buscable) ====== */}
+                            {col.field === "producto" && (
+                              <ProductSelect
+                                value={editingValue ?? ""}
+                                onChange={(newValue) => setEditingValue(newValue)}
+                                autoFocus
+                              />
+                            )}
+
+                            {/* ====== Texto estandar ====== */}
                             {!(
                               col.field === "createdAt" ||
                               col.field === "cabezas" ||
@@ -670,15 +685,16 @@ export default function CustomTable<T extends RowData>({
                               col.field === "medioAdquisicion" ||
                               col.field === "estado" ||
                               col.field === "siguiendo" ||
-                              col.field === "observaciones"
+                              col.field === "observaciones" ||
+                              col.field === "producto"
                             ) && (
-                                <input
-                                  type="text"
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                />
-                              )}
+                              <input
+                                type="text"
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                              />
+                            )}
 
                             {/* Icono de guardar */}
                             <SaveIcon

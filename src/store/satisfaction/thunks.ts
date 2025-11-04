@@ -1,22 +1,26 @@
+import { apiFetch } from "@/utils/auth";
 import { toast } from "react-toastify";
 import type { AppThunk } from "../sotre";
-import { addSatisfaction, deleteSatisfaction, setError, setLoading, setSatisfactions, updateSatisfaction, type Satisfaction } from "./satisfaction";
+import {
+  addSatisfaction,
+  deleteSatisfaction,
+  setError,
+  setLoading,
+  setSatisfactions,
+  updateSatisfaction,
+  type Satisfaction,
+} from "./satisfaction";
 
-// GET /satisfactions
 export const getSatisfactionsThunk = (): AppThunk => {
   return async (dispatch) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/satisfaction`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const response = await apiFetch(`${import.meta.env.VITE_API_URL}/satisfaction`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -35,8 +39,6 @@ export const getSatisfactionsThunk = (): AppThunk => {
   };
 };
 
-// POST /satisfactions
-// Omitimos id/_id/timestamps (los pone el server)
 export const postSatisfactionThunk = (
   payload: Omit<Satisfaction, "id" | "_id" | "createdAt" | "updatedAt">
 ): AppThunk => {
@@ -45,15 +47,11 @@ export const postSatisfactionThunk = (
     dispatch(setError(null));
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/satisfaction`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/satisfaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -74,7 +72,6 @@ export const postSatisfactionThunk = (
   };
 };
 
-// PATCH /satisfactions/:id  (update completo/partial)
 export const updateSatisfactionThunk = (
   satisfaction: Satisfaction
 ): AppThunk => {
@@ -87,15 +84,11 @@ export const updateSatisfactionThunk = (
       const targetId = _id || id;
       if (!targetId) throw new Error("Falta el id de la encuesta");
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/satisfaction/${targetId}`,
-        {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(rest), // envío los campos editables
-        }
-      );
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/satisfaction/${targetId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rest),
+      });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -118,7 +111,6 @@ export const updateSatisfactionThunk = (
   };
 };
 
-// PATCH /satisfactions/:id  (update de un campo)
 export const updateSatisfactionFieldThunk = (payload: {
   id: string;
   field: keyof Satisfaction;
@@ -133,15 +125,11 @@ export const updateSatisfactionFieldThunk = (payload: {
         [payload.field]: payload.value,
       };
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/satisfaction/${payload.id}`,
-        {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updateData),
-        }
-      );
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/satisfaction/${payload.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -169,20 +157,15 @@ export const updateSatisfactionFieldThunk = (payload: {
   };
 };
 
-// DELETE /satisfactions/:id
 export const deleteSatisfactionThunk = (id: string): AppThunk => {
   return async (dispatch) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/satisfaction/${id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/satisfaction/${id}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

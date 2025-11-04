@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
+import { apiFetch, authStore } from "@/utils/auth";
 
 interface Props {
   children: ReactNode;
@@ -10,25 +11,49 @@ export const PublicRouters: React.FC<Props> = ({ children }) => {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
     const checkAuth = async () => {
+      const token = authStore.get();
+
+      if (!token) {
+        if (isActive) {
+          setAuthenticated(false);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/check`, {
+        const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/check`, {
           method: "GET",
-          credentials: "include",
         });
+
+        if (!isActive) {
+          return;
+        }
+
         if (res.ok) {
           setAuthenticated(true);
         } else {
           setAuthenticated(false);
         }
-      } catch (err) {
-        setAuthenticated(false);
+      } catch {
+        if (isActive) {
+          setAuthenticated(false);
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     checkAuth();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   if (loading) {

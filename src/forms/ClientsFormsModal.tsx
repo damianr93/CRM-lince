@@ -1,5 +1,6 @@
 import React from "react";
 import { XIcon } from "lucide-react";
+import ProductSelect from "@/components/ProductSelect";
 import type { Client } from "@/store/clients/clients";
 
 interface ClientFormModalProps {
@@ -121,12 +122,11 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
                         {/* Producto y Localidad */}
                         <div className="grid grid-cols-1 gap-4">
-                            <input
-                                type="text"
-                                placeholder="Producto"
-                                value={currentClient.producto}
-                                onChange={(e) => onChange("producto", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            <ProductSelect
+                                value={currentClient.producto ?? ""}
+                                onChange={(selected) => onChange("producto", selected)}
+                                placeholder="Seleccionar producto"
+                                className="border-gray-300"
                             />
                             <input
                                 type="text"

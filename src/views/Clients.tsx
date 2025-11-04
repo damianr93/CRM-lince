@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
-import { PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
+import { FileSpreadsheet, PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
@@ -14,6 +14,7 @@ import type { AppDispatch, RootState } from "@/store/sotre";
 import ClientFormModal from "@/forms/ClientsFormsModal";
 import { useNotificationHelpers } from "@/components/NotificationSystem";
 import { cleanClientData } from "@/utils/dataCleaner";
+import { apiFetch } from "@/utils/auth";
 
 export default function ClientsViewer() {
   const dispatch = useDispatch<AppDispatch>();
@@ -25,7 +26,7 @@ export default function ClientsViewer() {
   const columns: Column[] = [
     { field: "nombre", headerName: "Nombre", align: "left" },
     { field: "apellido", headerName: "Apellido", align: "left" },
-    { field: "telefono", headerName: "Teléfono", align: "center" },
+    { field: "telefono", headerName: "Telefono", align: "center" },
     { field: "cabezas", headerName: "Cabezas", align: "right" },
     { field: "mesesSuplemento", headerName: "Meses Supl.", align: "right" },
     { field: "producto", headerName: "Producto", align: "left" },
@@ -53,7 +54,7 @@ export default function ClientsViewer() {
     },
   ];
 
-  // Modal y edición
+  // Modal y edicion
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client>({
@@ -177,9 +178,8 @@ export default function ClientsViewer() {
       const baseUrl = import.meta.env.VITE_API_URL || "";
       const url = `${baseUrl}/clients/export/excel`;
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: "GET",
-        credentials: "include",
       });
 
       if (!response.ok) {
@@ -202,7 +202,7 @@ export default function ClientsViewer() {
       showSuccess("Excel descargado", "El archivo Excel se ha descargado correctamente");
     } catch (err: any) {
       console.error("No se pudo descargar el Excel:", err);
-      showError("Error al descargar Excel", err.message || "Ocurrió un error al descargar el archivo Excel");
+      showError("Error al descargar Excel", err.message || "Ocurrio un error al descargar el archivo Excel");
     }
   };
 
@@ -211,24 +211,24 @@ export default function ClientsViewer() {
     <div className="p-4 pt-12 md:p-8 bg-gray-100 min-h-screen">
       {/* Header responsive */}
       <div className="mb-4">
-        {/* Título siempre visible */}
+        {/* Titulo siempre visible */}
         <h2 className="text-xl sm:text-2xl font-bold text-yellow-500 mb-4 sm:mb-0">
           Clientes
         </h2>
 
         {/* Contenedor de botones responsive */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
-          {/* Botón Excel */}
+          {/* Boton Excel */}
           <button
             onClick={handleDownloadExcel}
-            className="flex items-center justify-center gap-2 bg-green-400 hover:bg-green-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base transition-colors duration-200"
+            className="flex items-center justify-center gap-2 bg-green-400 hover:bg-green-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base transition-colors duration-200"
           >
-            <span className="text-lg sm:text-xl">📊</span>
+            <FileSpreadsheet className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="hidden xs:inline">Descargar Excel</span>
             <span className="xs:hidden">Excel</span>
           </button>
 
-          {/* Botón Agregar Cliente */}
+          {/* Boton Agregar Cliente */}
           <button
             onClick={openAddModal}
             className="flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-600 text-sm sm:text-base transition-colors duration-200"

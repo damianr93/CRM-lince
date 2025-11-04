@@ -1,3 +1,4 @@
+import { apiFetch } from "@/utils/auth";
 import type { AppThunk } from "../sotre";
 import { addClient, deleteClient, setClients, setError, setLoading, updateClient, type Client } from "./clients";
 
@@ -7,9 +8,8 @@ export const getClientsThunk = (): AppThunk => {
     dispatch(setError(null));
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/clients`, {
+      const response = await apiFetch(`${import.meta.env.VITE_API_URL}/clients`, {
         method: "GET",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
 
@@ -38,9 +38,8 @@ export const postClientThunk = (
     dispatch(setError(null));
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/clients`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/clients`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clientData),
       });
@@ -70,9 +69,8 @@ export const updateClientThunk = (
 
     try {
       const { _id, id, ...rest } = clientData;
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/clients/${_id}`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/clients/${_id}`, {
         method: "PATCH",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(rest),
       });
@@ -105,9 +103,8 @@ export const updateClientFieldThunk = (payload: {
       const updateData = {
         [payload.field]: payload.value
       };
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/clients/${payload.id}`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/clients/${payload.id}`, {
         method: "PATCH",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       });
@@ -138,9 +135,8 @@ export const deleteClientThunk = (clientId: string): AppThunk => {
     dispatch(setError(null));
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/clients/${clientId}`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/clients/${clientId}`, {
         method: "DELETE",
-        credentials: "include",
       });
       if (!res.ok) {
         const errData = await res.json();

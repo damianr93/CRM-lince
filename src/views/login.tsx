@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch, authStore } from "@/utils/auth";
 
 export default function LoginView() {
     const navigate = useNavigate();
@@ -12,21 +13,28 @@ export default function LoginView() {
         setError("");
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+            const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({ username, password }),
             });
 
+            const data = await res.json();
+
             if (!res.ok) {
-                const { message } = await res.json();
-                setError(message || "Credenciales inválidas");
+                setError(data?.message || "Credenciales inválidas");
                 return;
             }
 
+            if (!data?.token) {
+                setError("Respuesta inválida del servidor");
+                return;
+            }
+
+            authStore.set(data.token);
             navigate("/home");
         } catch (err) {
+            authStore.clear();
             setError("Error de conexión");
         }
     };

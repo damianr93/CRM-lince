@@ -1,3 +1,4 @@
+import { apiFetch } from "@/utils/auth";
 import type { AppThunk } from "../sotre";
 import {
   setLoading,
@@ -18,9 +19,7 @@ export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
   dispatch(setLoading(true));
   dispatch(setError(null));
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/totales`, {
-      credentials: "include",
-    });
+    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/totales`, {});
     if (!res.ok) throw new Error("Error al cargar totales");
     const data: { totalContacts: number; byChannel: ChannelData[] } = await res.json();
     dispatch(setTotales(data.totalContacts));
@@ -36,9 +35,7 @@ export const fetchAnalyticsEvolution = (): AppThunk => async (dispatch) => {
   dispatch(setLoading(true));
   dispatch(setError(null));
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/evolucion`, {
-      credentials: "include",
-    });
+    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/evolucion`, {});
     if (!res.ok) throw new Error("Error al cargar evolución");
     const data: TimePoint[] = await res.json();
     dispatch(setEvolution(data));
@@ -53,9 +50,7 @@ export const fetchAnalyticsDemand = (): AppThunk => async (dispatch) => {
   dispatch(setLoading(true));
   dispatch(setError(null));
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/demand-of-product`, {
-      credentials: "include",
-    });
+    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/demand-of-product`, {});
     if (!res.ok) throw new Error("Error al cargar demanda de producto");
     const data: ProductData[] = await res.json();
     dispatch(setByProduct(data));
@@ -70,9 +65,7 @@ export const fetchpurchaseStatus = (): AppThunk => async (dispatch) => {
   dispatch(setLoading(true));
   dispatch(setError(null));
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/status`, {
-      credentials: "include",
-    });
+    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/status`, {});
     if (!res.ok) throw new Error("Error al cargar estado de compras");
     const data = await res.json();
     dispatch(setStatusPurchase(data));
@@ -98,11 +91,9 @@ export const fetchFollowUpEvents = (
       params.set("status", status);
     }
     const query = params.toString();
-    const res = await fetch(
+    const res = await apiFetch(
       `${import.meta.env.VITE_API_URL}/analytics/follow-up-events${query ? `?${query}` : ""}`,
-      {
-        credentials: "include",
-      },
+      {},
     );
     if (!res.ok) throw new Error("Error al cargar eventos de seguimiento");
     const data: FollowUpEvent[] = await res.json();
@@ -120,11 +111,10 @@ export const completeFollowUpEvent =
   ): AppThunk<Promise<void>> =>
   async (dispatch) => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${import.meta.env.VITE_API_URL}/follow-up/events/${eventId}/status`,
         {
           method: "PATCH",
-          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
