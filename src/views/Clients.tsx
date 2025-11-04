@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
-import { FileSpreadsheet, PencilIcon, PlusIcon, TrashIcon } from "lucide-react";
+import { FileSpreadsheet, PencilIcon, PlusIcon, TrashIcon, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
@@ -15,6 +15,7 @@ import ClientFormModal from "@/forms/ClientsFormsModal";
 import { useNotificationHelpers } from "@/components/NotificationSystem";
 import { cleanClientData } from "@/utils/dataCleaner";
 import { apiFetch } from "@/utils/auth";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function ClientsViewer() {
   const dispatch = useDispatch<AppDispatch>();
@@ -206,52 +207,145 @@ export default function ClientsViewer() {
     }
   };
 
+  // Selector de columnas visibles
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "nombre",
+    "apellido",
+    "telefono",
+    "producto",
+    "localidad",
+    "actividad",
+    "estado",
+    "siguiendo",
+    "createdAt",
+  ]);
+
+  const toggleColumn = (field: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(field)
+        ? prev.filter((col) => col !== field)
+        : [...prev, field]
+    );
+  };
+
+  const filteredColumns = useMemo(() => {
+    return columns.filter((col) => visibleColumns.includes(col.field));
+  }, [columns, visibleColumns]);
+
 
   return (
-    <div className="p-4 pt-12 md:p-8 bg-gray-100 min-h-screen">
-      {/* Header responsive */}
-      <div className="mb-4">
-        {/* Titulo siempre visible */}
-        <h2 className="text-xl sm:text-2xl font-bold text-yellow-500 mb-4 sm:mb-0">
-          Clientes
-        </h2>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 pt-12 md:p-8">
+      {/* Header mejorado */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          {/* Título y descripción */}
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-3">
+              <Users className="h-8 w-8 md:h-10 md:w-10" />
+              Gestión de Clientes
+            </h1>
+            <p className="text-gray-300 text-sm md:text-base">
+              Administra tus contactos y leads en un solo lugar
+            </p>
+          </div>
 
-        {/* Contenedor de botones responsive */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
-          {/* Boton Excel */}
-          <button
-            onClick={handleDownloadExcel}
-            className="flex items-center justify-center gap-2 bg-green-400 hover:bg-green-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base transition-colors duration-200"
-          >
-            <FileSpreadsheet className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="hidden xs:inline">Descargar Excel</span>
-            <span className="xs:hidden">Excel</span>
-          </button>
+          {/* Botones de acción */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleDownloadExcel}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg shadow-lg hover:shadow-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <FileSpreadsheet className="h-5 w-5" />
+              <span>Exportar Excel</span>
+            </button>
 
-          {/* Boton Agregar Cliente */}
-          <button
-            onClick={openAddModal}
-            className="flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-600 text-sm sm:text-base transition-colors duration-200"
-          >
-            <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="hidden xs:inline">Agregar Cliente</span>
-            <span className="xs:hidden">Agregar</span>
-          </button>
+            <button
+              onClick={openAddModal}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-gray-900 px-4 py-2.5 rounded-lg shadow-lg hover:shadow-yellow-500/50 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <PlusIcon className="h-5 w-5" />
+              <span>Nuevo Cliente</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {loading && <div className="mb-4 text-gray-700">Cargando clientes...</div>}
-      {error && <div className="mb-4 text-red-600">{error}</div>}
+      {/* Estados de carga y error mejorados */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent mb-4"></div>
+            <p className="text-gray-300 text-lg">Cargando clientes...</p>
+          </div>
+        </div>
+      )}
 
-      <CustomTable<Client>
-        columns={columns}
-        data={(clients || []).map(cleanClientData)}
-        actions={actions}
-        onActionClick={handleActionClick}
-        onSaveCell={handleCellSave}
-        pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
-      />
+      {error && (
+        <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-center gap-3">
+          <div className="bg-red-500/20 p-2 rounded-lg">
+            <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-red-400 font-medium">{error}</p>
+        </div>
+      )}
 
+        {/* Tabla con diseño mejorado */}
+        {!loading && (
+          <>
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-yellow-400/10 shadow-2xl p-4 mb-6">
+              <CustomTable<Client>
+                columns={filteredColumns}
+                data={(clients || []).map(cleanClientData)}
+                actions={actions}
+                onActionClick={handleActionClick}
+                onSaveCell={handleCellSave}
+                pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
+              />
+            </div>
+
+            {/* Selector de Columnas */}
+            <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 backdrop-blur-sm shadow-xl">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="bg-yellow-400/10 p-2 rounded-lg">
+                    <svg className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-yellow-400 font-semibold">Columnas Visibles</h3>
+                  <span className="text-gray-400 text-sm ml-auto">
+                    {visibleColumns.length} de {columns.length}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {columns.map((col) => (
+                    <label
+                      key={col.field}
+                      className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors duration-200 border border-gray-700/30 hover:border-yellow-400/30"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns.includes(col.field)}
+                        onChange={() => toggleColumn(col.field)}
+                        className="w-4 h-4 text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2 cursor-pointer"
+                      />
+                      <span className="text-gray-300 text-sm select-none">
+                        {col.headerName}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+      {/* Modal sin cambios */}
       <ClientFormModal
         isOpen={isOpen}
         isEditing={isEditing}

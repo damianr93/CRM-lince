@@ -386,11 +386,11 @@ export default function CustomTable<T extends RowData>({
   return (
     <div className="w-full">
       {/* ============== FILTROS RESPONSIVOS ============== */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-4">
+      <div className="bg-gray-800/60 border border-gray-700/40 p-4 rounded-lg mb-4 space-y-4">
         {/* Fila 1: Filtro de búsqueda por columna */}
         <div className="flex flex-col sm:flex-row gap-2">
           <select
-            className="border border-gray-300 rounded px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:w-auto min-w-0 sm:min-w-[180px]"
+            className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:w-auto min-w-0 sm:min-w-[180px]"
             value={searchColumn}
             onChange={(e) => {
               setSearchColumn(e.target.value);
@@ -406,7 +406,7 @@ export default function CustomTable<T extends RowData>({
           </select>
           <input
             type="text"
-            className="border border-gray-300 rounded px-3 py-2 text-gray-700 flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 placeholder:text-neutral-500"
             placeholder="Valor a buscar"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -417,23 +417,23 @@ export default function CustomTable<T extends RowData>({
         {/* Fila 2: Filtro de fechas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <label className="text-gray-700 text-sm font-medium whitespace-nowrap">
+            <label className="text-neutral-300 text-sm font-medium whitespace-nowrap">
               Desde:
             </label>
             <input
               type="date"
-              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:flex-1"
+              className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:flex-1"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <label className="text-gray-700 text-sm font-medium whitespace-nowrap">
+            <label className="text-neutral-300 text-sm font-medium whitespace-nowrap">
               Hasta:
             </label>
             <input
               type="date"
-              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full sm:flex-1"
+              className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:flex-1"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
@@ -442,21 +442,21 @@ export default function CustomTable<T extends RowData>({
 
         {/* Fila 3: Filtro "siguiendo" por checkboxes */}
         <div className="space-y-2">
-          <span className="text-gray-700 text-sm font-medium block">Siguiendo:</span>
+          <span className="text-neutral-300 text-sm font-medium block">Siguiendo:</span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {seguimientoOptions.map((opt) => (
               <label
                 key={opt}
-                className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                className="flex items-center gap-2 p-2 bg-gray-800/80 rounded-lg border border-gray-700 hover:border-yellow-400/50 cursor-pointer transition-colors"
               >
                 <input
                   type="checkbox"
                   value={opt}
                   checked={siguiendoChecks.includes(opt)}
                   onChange={() => handleSiguiendoChange(opt)}
-                  className="focus:ring-2 focus:ring-yellow-400 text-yellow-500"
+                  className="focus:ring-2 focus:ring-yellow-400/50 text-yellow-500"
                 />
-                <span className="text-gray-700 text-sm select-none">{opt.replace("_", " ")}</span>
+                <span className="text-neutral-200 text-sm select-none">{opt.replace("_", " ")}</span>
               </label>
             ))}
           </div>
@@ -464,9 +464,9 @@ export default function CustomTable<T extends RowData>({
       </div>
 
       {/* ============== TABLA ============== */}
-      <div className="overflow-x-auto border border-gray-200 rounded">
+      <div className="overflow-x-auto border border-gray-700/50 rounded-xl">
         <table className="table-fixed w-full text-left border-collapse">
-          <thead className="bg-gray-800">
+          <thead className="bg-gray-800/70">
             <tr>
               {columns.map((col, colIndex) => {
                 // Determinar flecha de orden ("▲" or "▼")
@@ -478,7 +478,7 @@ export default function CustomTable<T extends RowData>({
                   <th
                     key={col.field}
                     style={{ width: widths[colIndex] }}
-                    className={`relative px-4 py-2 text-sm font-semibold text-white ${col.align === "center"
+                    className={`relative px-4 py-2 text-sm font-semibold text-neutral-200 ${col.align === "center"
                         ? "text-center"
                         : col.align === "right"
                           ? "text-right"
@@ -513,7 +513,7 @@ export default function CustomTable<T extends RowData>({
               {actions && (
                 <th
                   style={{ width: widths[columns.length] }}
-                  className="relative px-4 py-2 text-sm font-semibold text-white text-center sticky top-0"
+                  className="relative px-4 py-2 text-sm font-semibold text-neutral-200 text-center sticky top-0"
                 >
                   Acciones
                   <div
@@ -527,9 +527,8 @@ export default function CustomTable<T extends RowData>({
 
           <tbody>
             {tabFilteredData.map((row, rowIndex) => {
-              const isEven = rowIndex % 2 === 0;
               return (
-                <tr key={rowIndex} className={isEven ? "bg-gray-50" : "bg-white"}>
+                <tr key={rowIndex} className="border-t border-gray-700/40 hover:bg-gray-800/40">
                   {columns.map((col, colIndex) => {
                     const isEditingThis =
                       editingCell?.rowIndex === rowIndex && editingCell.field === col.field;
@@ -559,7 +558,7 @@ export default function CustomTable<T extends RowData>({
                     return (
                       <td
                         key={col.field}
-                        className={`px-4 py-2 text-sm text-gray-700 ${col.align === "center"
+                        className={`px-4 py-2 text-sm text-neutral-200 ${col.align === "center"
                             ? "text-center"
                             : col.align === "right"
                               ? "text-right"
@@ -582,7 +581,7 @@ export default function CustomTable<T extends RowData>({
                                 type="date"
                                 value={editingValue || ""}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               />
                             )}
 
@@ -592,7 +591,7 @@ export default function CustomTable<T extends RowData>({
                                 type="text"
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               />
                             )}
 
@@ -601,7 +600,7 @@ export default function CustomTable<T extends RowData>({
                               <select
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {actividades.map((opt) => (
                                   <option key={opt} value={opt}>
@@ -616,7 +615,7 @@ export default function CustomTable<T extends RowData>({
                               <select
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {medios.map((opt) => (
                                   <option key={opt} value={opt}>
@@ -631,7 +630,7 @@ export default function CustomTable<T extends RowData>({
                               <select
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {estados.map((opt) => (
                                   <option key={opt} value={opt}>
@@ -646,7 +645,7 @@ export default function CustomTable<T extends RowData>({
                               <select
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               >
                                 {seguimientoOptions.map((opt) => (
                                   <option key={opt} value={opt}>
@@ -661,7 +660,7 @@ export default function CustomTable<T extends RowData>({
                               <textarea
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
                                 rows={3}
                                 placeholder="Agregar observaciones..."
                               />
@@ -692,7 +691,7 @@ export default function CustomTable<T extends RowData>({
                                 type="text"
                                 value={editingValue}
                                 onChange={(e) => setEditingValue(e.target.value)}
-                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className="border border-gray-400 rounded px-2 py-1 text-sm w-full pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                               />
                             )}
 
@@ -751,7 +750,7 @@ export default function CustomTable<T extends RowData>({
               <tr>
                 <td
                   colSpan={columns.length + (actions ? 1 : 0)}
-                  className="px-4 py-6 text-center text-gray-500"
+                  className="px-4 py-6 text-center text-neutral-400"
                 >
                   No hay registros
                 </td>
@@ -763,11 +762,14 @@ export default function CustomTable<T extends RowData>({
 
       {/* ============== PAGINACIÓN ============== */}
       {pagination && (
-        <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+          <span className="text-sm text-neutral-400">
+            Página {page + 1} de {pageCount || 1} · {filteredData.length} resultados
+          </span>
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 text-sm">Filas por página:</span>
+            <span className="text-sm text-neutral-400">Filas por página:</span>
             <select
-              className="border border-gray-300 rounded px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="px-2 py-1 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               value={rowsPerPage}
               onChange={handleRowsPerPageChange}
             >
@@ -778,23 +780,20 @@ export default function CustomTable<T extends RowData>({
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-4 text-gray-700 text-sm">
+          <div className="flex gap-2">
             <button
               onClick={handlePrevPage}
               disabled={page === 0}
-              className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             >
-              ◀️
+              Anterior
             </button>
-            <span>
-              Página {page + 1} de {pageCount || 1}
-            </span>
             <button
               onClick={handleNextPage}
               disabled={page >= pageCount - 1}
-              className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             >
-              ▶️
+              Siguiente
             </button>
           </div>
         </div>
