@@ -151,22 +151,48 @@ export default function SatisfactionDashboard() {
   // ---------- Agregados / KPIs ----------
   // 1) Barras: promedio de calidad por producto
   const qualityByProduct = useMemo(() => {
-    const byProd = groupBy(items, (x) => x.product || "SIN_PRODUCTO");
-    const rows = Object.entries(byProd).map(([product, arr]) => ({
-      product,
-      calidad: Number(avg(arr.map((r: Satisfaction) => r.calidad)).toFixed(2)),
-    }));
+    // Filtrar items con productos válidos
+    const validItems = items.filter(
+      (item) =>
+        item.product &&
+        item.product !== "-" &&
+        item.product !== "Sin dato" &&
+        item.product.toLowerCase() !== "null" &&
+        item.product.toLowerCase() !== "undefined" &&
+        item.product.trim() !== ""
+    );
+    
+    const byProd = groupBy(validItems, (x) => x.product || "SIN_PRODUCTO");
+    const rows = Object.entries(byProd)
+      .filter(([product]) => product !== "SIN_PRODUCTO") // Excluir SIN_PRODUCTO también
+      .map(([product, arr]) => ({
+        product,
+        calidad: Number(avg(arr.map((r: Satisfaction) => r.calidad)).toFixed(2)),
+      }));
     rows.sort((a, b) => b.calidad - a.calidad);
     return rows;
   }, [items]);
 
   // 2) Torta: cantidad de respuestas por producto
   const countByProduct = useMemo(() => {
-    const byProd = groupBy(items, (x) => x.product || "SIN_PRODUCTO");
-    const rows = Object.entries(byProd).map(([product, arr]) => ({
-      product,
-      total: (arr as Satisfaction[]).length,
-    }));
+    // Filtrar items con productos válidos
+    const validItems = items.filter(
+      (item) =>
+        item.product &&
+        item.product !== "-" &&
+        item.product !== "Sin dato" &&
+        item.product.toLowerCase() !== "null" &&
+        item.product.toLowerCase() !== "undefined" &&
+        item.product.trim() !== ""
+    );
+    
+    const byProd = groupBy(validItems, (x) => x.product || "SIN_PRODUCTO");
+    const rows = Object.entries(byProd)
+      .filter(([product]) => product !== "SIN_PRODUCTO") // Excluir SIN_PRODUCTO también
+      .map(([product, arr]) => ({
+        product,
+        total: (arr as Satisfaction[]).length,
+      }));
     rows.sort((a, b) => b.total - a.total);
     return rows;
   }, [items]);

@@ -111,6 +111,30 @@ export default function ClientsDashboard() {
     [statusOptions, statusFilter],
   );
 
+  // Filtrar productos inválidos (null, "-", "Sin dato", etc.) SOLO para el gráfico
+  const filteredByProduct = useMemo(() => {
+    if (!byProduct) return [];
+    return (byProduct as ProductData[]).filter(
+      (item) => {
+        // Excluir si es null, undefined o vacío
+        if (!item.product || item.product === null || item.product === undefined) {
+          return false;
+        }
+        
+        const productStr = String(item.product).trim();
+        
+        // Excluir valores inválidos
+        return (
+          productStr !== "" &&
+          productStr !== "-" &&
+          productStr !== "Sin dato" &&
+          productStr.toLowerCase() !== "null" &&
+          productStr.toLowerCase() !== "undefined"
+        );
+      }
+    );
+  }, [byProduct]);
+
   useEffect(() => {
     dispatch(fetchAnalyticsTotales());
     dispatch(fetchAnalyticsEvolution());
@@ -318,8 +342,8 @@ export default function ClientsDashboard() {
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
                 layout="vertical"
-                data={byProduct as ProductData[]}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                data={filteredByProduct}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                 <XAxis
@@ -333,13 +357,14 @@ export default function ClientsDashboard() {
                   type="category"
                   dataKey="product"
                   stroke="#D1D5DB"
-                  fontSize={12}
-                  tick={{ fill: "#D1D5DB" }}
+                  fontSize={10}
+                  width={5}
+                  tick={false}
                   axisLine={{ stroke: "#6B7280" }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                  {(byProduct as ProductData[]).map((_, idx) => (
+                  {filteredByProduct.map((_, idx) => (
                     <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Bar>
