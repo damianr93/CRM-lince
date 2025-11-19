@@ -81,6 +81,10 @@ export default function ClientsDashboard() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<"READY" | "COMPLETED">("READY");
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const totalContacts = totales?.totalContacts ?? 0;
+  const totalReconsultas = totales?.totalReconsultas ?? 0;
+  const firstTimeContacts = totales?.firstTimeContacts ?? Math.max(totalContacts - totalReconsultas, 0);
+  const reconsultaRatio = totalContacts > 0 ? Math.round((totalReconsultas / totalContacts) * 100) : 0;
 
   const statusOptions = useMemo(
     () => [
@@ -220,14 +224,32 @@ export default function ClientsDashboard() {
             Contactos, canales de adquisicion y productos consultados
           </p>
         </div>
-        <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
-          <CardContent className="p-4 flex flex-col items-start sm:items-center">
-            <span className="text-2xl font-bold text-yellow-400">
-              {totales}
-            </span>
-            <span className="text-sm text-neutral-400">Contactos totales</span>
-          </CardContent>
-        </Card>
+        <div className="flex flex-wrap gap-4 items-stretch">
+          <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+            <CardContent className="p-4 flex flex-col items-start sm:items-center">
+              <span className="text-2xl font-bold text-yellow-400">
+                {totalContacts}
+              </span>
+              <span className="text-sm text-neutral-400">Contactos totales</span>
+              <span className="text-xs text-neutral-500 mt-1">
+                Primer ingreso: {firstTimeContacts}
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="w-full sm:w-auto bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-400/30 backdrop-blur-sm">
+            <CardContent className="p-4 flex flex-col items-start sm:items-center gap-1">
+              <span className="text-xs uppercase tracking-[0.2em] text-amber-100">
+                Reconsultas
+              </span>
+              <span className="text-2xl font-bold text-white">
+                {totalReconsultas}
+              </span>
+              <span className="text-sm text-amber-100/80">
+                {reconsultaRatio}% del total
+              </span>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Grid de canales */}
@@ -569,8 +591,6 @@ export default function ClientsDashboard() {
     </div>
   );
 }
-
-
 
 
 

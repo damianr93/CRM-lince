@@ -21,6 +21,12 @@ export interface ProductData {
   total: number;
 }
 
+export interface TotalsSummary {
+  totalContacts: number;
+  totalReconsultas: number;
+  firstTimeContacts: number;
+}
+
 export interface FollowUpEvent {
   id: string;
   customerName?: string;
@@ -44,7 +50,7 @@ export interface FollowUpEvent {
 interface AnalyticsState {
   loading: boolean;
   error: string | null;
-  totales: number;                  
+  totales: TotalsSummary;                  
   byChannel: ChannelData[];       
   evolution: TimePoint[];        
   byProduct: ProductData[];
@@ -55,7 +61,11 @@ interface AnalyticsState {
 const initialState: AnalyticsState = {
   loading: false,
   error: null,
-  totales: 0,
+  totales: {
+    totalContacts: 0,
+    totalReconsultas: 0,
+    firstTimeContacts: 0,
+  },
   byChannel: [],
   evolution: [],
   byProduct: [],

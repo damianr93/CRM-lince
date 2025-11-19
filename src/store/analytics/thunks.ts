@@ -21,8 +21,17 @@ export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
   try {
     const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/totales`, {});
     if (!res.ok) throw new Error("Error al cargar totales");
-    const data: { totalContacts: number; byChannel: ChannelData[] } = await res.json();
-    dispatch(setTotales(data.totalContacts));
+    const data: { totalContacts: number; totalReconsultas?: number; firstTimeContacts?: number; byChannel: ChannelData[] } = await res.json();
+    const totalReconsultas = data.totalReconsultas ?? 0;
+    const firstTimeContacts =
+      data.firstTimeContacts ?? Math.max(data.totalContacts - totalReconsultas, 0);
+    dispatch(
+      setTotales({
+        totalContacts: data.totalContacts,
+        totalReconsultas,
+        firstTimeContacts,
+      }),
+    );
     dispatch(setByChannel(data.byChannel));
   } catch (err: any) {
     dispatch(setError(err.message));

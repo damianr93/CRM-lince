@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
-import { FileSpreadsheet, PencilIcon, PlusIcon, TrashIcon, Users } from "lucide-react";
+import { FileSpreadsheet, PencilIcon, PlusIcon, TargetIcon, TrashIcon, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
@@ -23,11 +23,13 @@ export default function ClientsViewer() {
     (state: RootState) => state.clients
   );
   const { showSuccess, showError } = useNotificationHelpers();
+  const [reconsultaFilter, setReconsultaFilter] = useState<"ALL" | "RECONSULTAS" | "ORIGINAL">("ALL");
 
   const columns: Column[] = [
     { field: "nombre", headerName: "Nombre", align: "left" },
     { field: "apellido", headerName: "Apellido", align: "left" },
     { field: "telefono", headerName: "Telefono", align: "center" },
+    { field: "isReconsulta", headerName: "Reconsulta", align: "center" },
     { field: "cabezas", headerName: "Cabezas", align: "right" },
     { field: "mesesSuplemento", headerName: "Meses Supl.", align: "right" },
     { field: "producto", headerName: "Producto", align: "left" },
@@ -73,6 +75,7 @@ export default function ClientsViewer() {
     estado: "PENDIENTE",
     siguiendo: "SIN_ASIGNAR",
     observaciones: "",
+    isReconsulta: false,
   });
 
   useEffect(() => {
@@ -102,6 +105,7 @@ export default function ClientsViewer() {
       estado: "PENDIENTE",
       siguiendo: "SIN_ASIGNAR",
       observaciones: "",
+      isReconsulta: false,
     });
     setIsEditing(false);
     setIsOpen(true);
@@ -212,6 +216,7 @@ export default function ClientsViewer() {
     "nombre",
     "apellido",
     "telefono",
+    "isReconsulta",
     "producto",
     "localidad",
     "actividad",
@@ -231,6 +236,41 @@ export default function ClientsViewer() {
   const filteredColumns = useMemo(() => {
     return columns.filter((col) => visibleColumns.includes(col.field));
   }, [columns, visibleColumns]);
+
+  const reconsultaStats = useMemo(() => {
+    const total = clients?.length ?? 0;
+    const reconsultas = (clients ?? []).filter((client) => client.isReconsulta).length;
+    const originales = Math.max(total - reconsultas, 0);
+    return {
+      total,
+      reconsultas,
+      originales,
+      ratio: total > 0 ? Math.round((reconsultas / total) * 100) : 0,
+    };
+  }, [clients]);
+
+  const filteredClients = useMemo(() => {
+    const base = clients ?? [];
+    switch (reconsultaFilter) {
+      case "RECONSULTAS":
+        return base.filter((client) => client.isReconsulta);
+      case "ORIGINAL":
+        return base.filter((client) => !client.isReconsulta);
+      default:
+        return base;
+    }
+  }, [clients, reconsultaFilter]);
+
+  const cleanedClients = useMemo(() => filteredClients.map(cleanClientData), [filteredClients]);
+
+  const filterOptions: Array<{ value: typeof reconsultaFilter; label: string; helper: string }> = useMemo(
+    () => [
+      { value: "ALL", label: "Todos", helper: `${reconsultaStats.total} registros` },
+      { value: "RECONSULTAS", label: "Reconsultas", helper: `${reconsultaStats.reconsultas} (${reconsultaStats.ratio}%)` },
+      { value: "ORIGINAL", label: "Primer ingreso", helper: `${reconsultaStats.originales} registros únicos` },
+    ],
+    [reconsultaStats],
+  );
 
 
   return (
@@ -269,8 +309,100 @@ export default function ClientsViewer() {
               <span>Nuevo Cliente</span>
             </button>
           </div>
-        </div>
       </div>
+    </div>
+
+    {/* Resumen de reconsultas y filtros */}
+    <div className="mb-8 grid gap-4 lg:grid-cols-[2fr,1fr]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 shadow-xl">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 mb-1">
+              Contactos totales
+            </p>
+            <p className="text-3xl font-bold text-yellow-400">
+              {reconsultaStats.total}
+            </p>
+            <p className="text-sm text-neutral-400 mt-1">
+              Historial completo del CRM
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-400/40 shadow-xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs uppercase tracking-[0.2em] text-amber-100">
+                Reconsultas
+              </p>
+              <span className="text-sm font-semibold text-amber-100">
+                {reconsultaStats.ratio}%
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-white">
+              {reconsultaStats.reconsultas}
+            </p>
+            <p className="text-xs text-amber-100/80 mt-2">
+              Clientes que regresaron en la misma línea
+            </p>
+            <div className="mt-3 h-2 rounded-full bg-amber-100/20 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-300 to-yellow-200"
+                style={{ width: `${reconsultaStats.ratio}%` }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 border border-emerald-400/30 shadow-xl">
+          <CardContent className="p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-100 mb-1">
+              Primer ingreso
+            </p>
+            <p className="text-3xl font-bold text-white">
+              {reconsultaStats.originales}
+            </p>
+            <p className="text-xs text-emerald-100/80 mt-2">
+              Contactos únicos en la base
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 shadow-xl">
+        <CardContent className="p-4 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-yellow-400/20 text-yellow-300">
+              <TargetIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-neutral-100">
+                Filtrar por tipo de consulta
+              </p>
+              <p className="text-xs text-neutral-400">
+                Visualiza rápidamente clientes repetidos o nuevos
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setReconsultaFilter(option.value)}
+                className={`w-full rounded-lg border px-4 py-2 text-left transition-colors duration-200 ${
+                  reconsultaFilter === option.value
+                    ? "border-yellow-400/70 bg-yellow-400/10 text-yellow-300"
+                    : "border-gray-600/60 bg-gray-800/40 text-neutral-200 hover:border-yellow-400/40"
+                }`}
+              >
+                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="block text-xs text-neutral-400">{option.helper}</span>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
 
       {/* Estados de carga y error mejorados */}
       {loading && (
@@ -299,7 +431,7 @@ export default function ClientsViewer() {
             <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-yellow-400/10 shadow-2xl p-4 mb-6">
               <CustomTable<Client>
                 columns={filteredColumns}
-                data={(clients || []).map(cleanClientData)}
+                data={cleanedClients}
                 actions={actions}
                 onActionClick={handleActionClick}
                 onSaveCell={handleCellSave}

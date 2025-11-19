@@ -20,6 +20,7 @@ export interface Client {
   createdAt?: string;
   siguiendo?: "EZEQUIEL" | "DENIS" | "MARTIN" | "SIN_ASIGNAR";
   updatedAt?: string;
+  isReconsulta?: boolean;
 }
 
 interface ClientsState {

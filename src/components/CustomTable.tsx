@@ -61,6 +61,7 @@ export default function CustomTable<T extends RowData>({
   const [dateTo, setDateTo] = useState<string>(""); // formato "YYYY-MM-DD"
   const seguimientoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
   const [siguiendoChecks, setSiguiendoChecks] = useState<string[]>([]);
+  const readOnlyFields = useMemo(() => new Set(["isReconsulta"]), []);
 
   /** Para inline editing: fila y campo en edición */
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; field: string } | null>(null);
@@ -90,6 +91,7 @@ export default function CustomTable<T extends RowData>({
         case 'actividad':
         case 'estado':
         case 'siguiendo':
+        case 'isReconsulta':
           return 140;
         case 'observaciones':
           return 200;
@@ -129,10 +131,11 @@ export default function CustomTable<T extends RowData>({
           case 'cabezas':
           case 'mesesSuplemento':
             return 100;
-          case 'actividad':
-          case 'estado':
-          case 'siguiendo':
-            return 140;
+        case 'actividad':
+        case 'estado':
+        case 'siguiendo':
+        case 'isReconsulta':
+          return 140;
           case 'observaciones':
             return 200;
           case 'createdAt':
@@ -284,6 +287,9 @@ export default function CustomTable<T extends RowData>({
   // Inline editing: doble clic, guardar, cancelar
   // --------------------------------------
   const handleCellDoubleClick = (rowIdx: number, field: string) => {
+    if (readOnlyFields.has(field)) {
+      return;
+    }
     const original = paginatedData[rowIdx][field];
     // Si es createdAt, extraer "YYYY-MM-DD"
     if (field === "createdAt" && original) {
@@ -532,6 +538,8 @@ export default function CustomTable<T extends RowData>({
                   {columns.map((col, colIndex) => {
                     const isEditingThis =
                       editingCell?.rowIndex === rowIndex && editingCell.field === col.field;
+                    const isReconsultaColumn = col.field === "isReconsulta";
+                    const isReconsultaValue = Boolean(row[col.field]);
 
                     // Obtener valor bruto
                     let rawValue: any = "-";
@@ -555,6 +563,10 @@ export default function CustomTable<T extends RowData>({
                       displayValue = displayValue.substring(0, 50) + "...";
                     }
 
+                    if (isReconsultaColumn) {
+                      displayValue = isReconsultaValue ? "Reconsulta" : "Nuevo";
+                    }
+
                     return (
                       <td
                         key={col.field}
@@ -571,7 +583,11 @@ export default function CustomTable<T extends RowData>({
                           whiteSpace: isEditingThis ? 'normal' : 'nowrap',
                           backgroundColor: isEditingThis ? '#ffffff' : undefined
                         }}
-                        onDoubleClick={() => handleCellDoubleClick(rowIndex, col.field)}
+                        onDoubleClick={
+                          readOnlyFields.has(col.field)
+                            ? undefined
+                            : () => handleCellDoubleClick(rowIndex, col.field)
+                        }
                       >
                         {isEditingThis ? (
                           <div className="relative z-20 w-full bg-white rounded-md shadow-sm">
@@ -708,6 +724,17 @@ export default function CustomTable<T extends RowData>({
                               size={16}
                             />
                           </div>
+                        ) : isReconsultaColumn ? (
+                          <div className="flex items-center justify-center">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold ${isReconsultaValue
+                                ? "border-amber-400/50 bg-amber-400/10 text-amber-200"
+                                : "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
+                              }`}
+                            >
+                              {displayValue}
+                            </span>
+                          </div>
                         ) : (
                           <div 
                             className={`cursor-help ${rawValue !== "-" && rawValue && rawValue !== displayValue ? "text-blue-600" : ""}`}
@@ -715,7 +742,7 @@ export default function CustomTable<T extends RowData>({
                           >
                             {displayValue}
                             {rawValue !== "-" && rawValue && rawValue !== displayValue && (
-                              <span className="text-gray-400 ml-1">⋯</span>
+                              <span className="text-gray-400 ml-1">-&gt;</span>
                             )}
                           </div>
                         )}

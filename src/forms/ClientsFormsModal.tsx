@@ -40,6 +40,14 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                     </h3>
                 </div>
 
+                {currentClient.isReconsulta && (
+                    <div className="px-6 pb-2">
+                        <div className="rounded-lg border border-amber-400/40 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+                            Este registro fue marcado como reconsulta automáticamente.
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto px-6">
                     <form onSubmit={onSubmit} className="space-y-4 pb-4">
                         {/* Nombre y Apellido */}
