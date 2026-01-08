@@ -26,7 +26,6 @@ import {
   completeFollowUpEvent,
   fetchLocationSummary,
 } from "@/store/analytics/thunks";
-import LocationHeatmap from "@/components/LocationHeatmap";
 
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
 
@@ -444,7 +443,7 @@ export default function ClientsDashboard() {
       </div>
 
       {locationSummary && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
             <CardHeader className="border-b border-gold-400/20 pb-4">
               <CardTitle className="text-xl font-bold text-yellow-400">
@@ -493,17 +492,6 @@ export default function ClientsDashboard() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
-            <CardHeader className="border-b border-gold-400/20 pb-4">
-              <CardTitle className="text-xl font-bold text-yellow-400">
-                Mapa de Consultas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <LocationHeatmap provinces={locationSummary.heatmapProvinces ?? []} />
             </CardContent>
           </Card>
         </div>

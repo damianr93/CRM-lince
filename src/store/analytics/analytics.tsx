@@ -34,7 +34,6 @@ export interface LocationSummary {
   topProvinces: Array<{ name: string; total: number; percentage: number }>;
   topLocalities: Array<{ name: string; province: string; total: number; percentage: number }>;
   mapPoints: LocationPoint[];
-  heatmapProvinces: Array<{ name: string; normalized: string; total: number; percentage: number }>;
 }
 
 export interface TotalsSummary {
