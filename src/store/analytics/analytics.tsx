@@ -21,6 +21,22 @@ export interface ProductData {
   total: number;
 }
 
+export interface LocationPoint {
+  name: string;
+  lat: number;
+  lon: number;
+  total: number;
+}
+
+export interface LocationSummary {
+  total: number;
+  noLocation: { total: number; percentage: number };
+  topProvinces: Array<{ name: string; total: number; percentage: number }>;
+  topLocalities: Array<{ name: string; province: string; total: number; percentage: number }>;
+  mapPoints: LocationPoint[];
+  heatmapProvinces: Array<{ name: string; normalized: string; total: number; percentage: number }>;
+}
+
 export interface TotalsSummary {
   totalContacts: number;
   totalReconsultas: number;
@@ -56,6 +72,7 @@ interface AnalyticsState {
   byProduct: ProductData[];
   statusPurchase: StatusPoint[];
   followUpEvents: FollowUpEvent[];
+  locationSummary: LocationSummary | null;
 }
 
 const initialState: AnalyticsState = {
@@ -71,6 +88,7 @@ const initialState: AnalyticsState = {
   byProduct: [],
   statusPurchase: [],
   followUpEvents: [],
+  locationSummary: null,
 };
 
 const analyticsSlice = createSlice({
@@ -107,7 +125,10 @@ const analyticsSlice = createSlice({
     },
     setFollowUpEvents(state, action) {
       state.followUpEvents = action.payload;
-    }
+    },
+    setLocationSummary(state, action) {
+      state.locationSummary = action.payload;
+    },
   },
 });
 
@@ -119,9 +140,8 @@ export const {
   setEvolution,
   setByProduct,
   setStatusPurchase,
-  setFollowUpEvents
+  setFollowUpEvents,
+  setLocationSummary,
 } = analyticsSlice.actions;
 
 export default analyticsSlice
-
-

@@ -13,6 +13,8 @@ import {
   setStatusPurchase,
   setFollowUpEvents,
   type FollowUpEvent,
+  setLocationSummary,
+  type LocationSummary,
 } from "./analytics";
 
 export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
@@ -143,3 +145,15 @@ export const completeFollowUpEvent =
       throw err;
     }
   };
+
+export const fetchLocationSummary = (): AppThunk => async (dispatch) => {
+  dispatch(setError(null));
+  try {
+    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/location-summary`, {});
+    if (!res.ok) throw new Error("Error al cargar resumen de ubicaciones");
+    const data: LocationSummary = await res.json();
+    dispatch(setLocationSummary(data));
+  } catch (err: any) {
+    dispatch(setError(err.message));
+  }
+};

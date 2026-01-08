@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
-import { FileSpreadsheet, PencilIcon, PlusIcon, TargetIcon, TrashIcon, Users } from "lucide-react";
+import { FileSpreadsheet, FileText, PencilIcon, PlusIcon, TargetIcon, TrashIcon, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
@@ -16,6 +16,7 @@ import { useNotificationHelpers } from "@/components/NotificationSystem";
 import { cleanClientData } from "@/utils/dataCleaner";
 import { apiFetch } from "@/utils/auth";
 import { Card, CardContent } from "@/components/ui/card";
+import { ReportFiltersModal, type ReportFilters } from "@/components/ReportFiltersModal";
 
 export default function ClientsViewer() {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,7 +34,10 @@ export default function ClientsViewer() {
     { field: "cabezas", headerName: "Cabezas", align: "right" },
     { field: "mesesSuplemento", headerName: "Meses Supl.", align: "right" },
     { field: "producto", headerName: "Producto", align: "left" },
+    { field: "provincia", headerName: "Provincia", align: "left" },
     { field: "localidad", headerName: "Localidad", align: "left" },
+    { field: "ubicacion.displayName", headerName: "Ubicacion verificada", align: "left" },
+    { field: "ubicacion.fuente", headerName: "Fuente geo", align: "center" },
     { field: "actividad", headerName: "Actividad", align: "center" },
     { field: "estado", headerName: "Estado", align: "center" },
     { field: "siguiendo", headerName: "Siguiendo", align: "left" },
@@ -60,6 +64,8 @@ export default function ClientsViewer() {
   // Modal y edicion
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client>({
     id: "",
     nombre: "",
@@ -69,7 +75,9 @@ export default function ClientsViewer() {
     cabezas: "",
     mesesSuplemento: "",
     producto: "",
+    provincia: "",
     localidad: "",
+    ubicacion: undefined,
     actividad: "CRIA",
     medioAdquisicion: "OTRO",
     estado: "PENDIENTE",
@@ -99,7 +107,9 @@ export default function ClientsViewer() {
       cabezas: "",
       mesesSuplemento: "",
       producto: "",
+      provincia: "",
       localidad: "",
+      ubicacion: undefined,
       actividad: "CRIA",
       medioAdquisicion: "OTRO",
       estado: "PENDIENTE",
@@ -211,6 +221,48 @@ export default function ClientsViewer() {
     }
   };
 
+  const handleOpenReport = () => {
+    setIsReportOpen(true);
+  };
+
+  const handleReportSubmit = async (filters: ReportFilters) => {
+    try {
+      setReportLoading(true);
+      const params = new URLSearchParams();
+      if (filters.startDate) params.set("startDate", filters.startDate);
+      if (filters.endDate) params.set("endDate", filters.endDate);
+      if (filters.provincias) params.set("provincias", filters.provincias);
+      if (filters.paises) params.set("paises", filters.paises);
+      if (filters.zonas) params.set("zonas", filters.zonas);
+
+      const baseUrl = import.meta.env.VITE_API_URL || "";
+      const url = `${baseUrl}/analytics/location-report/pdf${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await apiFetch(url, { method: "GET" });
+      if (!response.ok) {
+        throw new Error(`Error al generar PDF: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(
+        new Blob([blob], { type: response.headers.get("Content-Type") || "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", "reporte_ubicacion_clientes.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      showSuccess("Reporte descargado", "El PDF se ha descargado correctamente");
+      setIsReportOpen(false);
+    } catch (err: any) {
+      console.error("No se pudo descargar el PDF:", err);
+      showError("Error al descargar PDF", err.message || "Ocurrió un error al generar el informe");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   // Selector de columnas visibles
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     "nombre",
@@ -218,6 +270,7 @@ export default function ClientsViewer() {
     "telefono",
     "isReconsulta",
     "producto",
+    "provincia",
     "localidad",
     "actividad",
     "estado",
@@ -298,6 +351,15 @@ export default function ClientsViewer() {
             >
               <FileSpreadsheet className="h-5 w-5" />
               <span>Exportar Excel</span>
+            </button>
+
+            <button
+              onClick={handleOpenReport}
+              disabled={loading || reportLoading}
+              className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg shadow-lg hover:shadow-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <FileText className="h-5 w-5" />
+              <span>Emitir Informe PDF</span>
             </button>
 
             <button
@@ -405,15 +467,6 @@ export default function ClientsViewer() {
     </div>
 
       {/* Estados de carga y error mejorados */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent mb-4"></div>
-            <p className="text-gray-300 text-lg">Cargando clientes...</p>
-          </div>
-        </div>
-      )}
-
       {error && (
         <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-center gap-3">
           <div className="bg-red-500/20 p-2 rounded-lg">
@@ -426,56 +479,62 @@ export default function ClientsViewer() {
       )}
 
         {/* Tabla con diseño mejorado */}
-        {!loading && (
-          <>
-            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-yellow-400/10 shadow-2xl p-4 mb-6">
-              <CustomTable<Client>
-                columns={filteredColumns}
-                data={cleanedClients}
-                actions={actions}
-                onActionClick={handleActionClick}
-                onSaveCell={handleCellSave}
-                pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
-              />
-            </div>
+        <>
+          <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-yellow-400/10 shadow-2xl p-4 mb-6">
+            {loading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-gray-900/70">
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent mb-4"></div>
+                  <p className="text-gray-300 text-lg">Guardando cambios...</p>
+                </div>
+              </div>
+            )}
+            <CustomTable<Client>
+              columns={filteredColumns}
+              data={cleanedClients}
+              actions={actions}
+              onActionClick={handleActionClick}
+              onSaveCell={handleCellSave}
+              pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
+            />
+          </div>
 
-            {/* Selector de Columnas */}
-            <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 backdrop-blur-sm shadow-xl">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="bg-yellow-400/10 p-2 rounded-lg">
-                    <svg className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-yellow-400 font-semibold">Columnas Visibles</h3>
-                  <span className="text-gray-400 text-sm ml-auto">
-                    {visibleColumns.length} de {columns.length}
-                  </span>
+          {/* Selector de Columnas */}
+          <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 backdrop-blur-sm shadow-xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="bg-yellow-400/10 p-2 rounded-lg">
+                  <svg className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {columns.map((col) => (
-                    <label
-                      key={col.field}
-                      className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors duration-200 border border-gray-700/30 hover:border-yellow-400/30"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={visibleColumns.includes(col.field)}
-                        onChange={() => toggleColumn(col.field)}
-                        className="w-4 h-4 text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2 cursor-pointer"
-                      />
-                      <span className="text-gray-300 text-sm select-none">
-                        {col.headerName}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+                <h3 className="text-yellow-400 font-semibold">Columnas Visibles</h3>
+                <span className="text-gray-400 text-sm ml-auto">
+                  {visibleColumns.length} de {columns.length}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {columns.map((col) => (
+                  <label
+                    key={col.field}
+                    className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors duration-200 border border-gray-700/30 hover:border-yellow-400/30"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.includes(col.field)}
+                      onChange={() => toggleColumn(col.field)}
+                      className="w-4 h-4 text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2 cursor-pointer"
+                    />
+                    <span className="text-gray-300 text-sm select-none">
+                      {col.headerName}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
 
       {/* Modal sin cambios */}
       <ClientFormModal
@@ -485,6 +544,11 @@ export default function ClientsViewer() {
         onClose={closeModal}
         onSubmit={handleSubmit}
         onChange={handleChange}
+      />
+      <ReportFiltersModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        onSubmit={handleReportSubmit}
       />
     </div>
   );

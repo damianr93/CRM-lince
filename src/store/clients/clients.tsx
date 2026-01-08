@@ -13,6 +13,19 @@ export interface Client {
   mesesSuplemento?: string;
   producto?: string;
   localidad?: string;
+  provincia?: string;
+  ubicacion?: {
+    pais?: string;
+    provincia?: string;
+    localidad?: string;
+    zona?: string;
+    lat?: number;
+    lon?: number;
+    displayName?: string;
+    fuente?: string;
+    esNormalizada?: boolean;
+    normalizacionFallidaAt?: string;
+  };
   actividad?: "CRIA" | "RECRIA" | "MIXTO" | "DISTRIBUIDOR";
   medioAdquisicion?: "INSTAGRAM" | "WEB" | "WHATSAPP" | "FACEBOOK" | "OTRO";
   estado?: "PENDIENTE" | "COMPRO" | "NO_COMPRO";

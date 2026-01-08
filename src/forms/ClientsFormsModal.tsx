@@ -1,6 +1,7 @@
 import React from "react";
 import { XIcon } from "lucide-react";
 import ProductSelect from "@/components/ProductSelect";
+import { LocationSearch, type LocationOption } from "@/components/LocationSearch";
 import type { Client } from "@/store/clients/clients";
 
 interface ClientFormModalProps {
@@ -21,6 +22,29 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
     onChange,
 }) => {
     const siguiendoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
+    const handleLocationSelect = (option: LocationOption) => {
+        onChange("ubicacion", {
+            pais: undefined,
+            provincia: option.provincia,
+            localidad: option.localidad,
+            zona: option.zona,
+            lat: option.lat,
+            lon: option.lon,
+            displayName: option.displayName ?? option.label,
+            fuente: option.fuente ?? "NOMINATIM",
+            esNormalizada: true,
+        });
+        if (option.localidad) {
+            onChange("localidad", option.localidad);
+        }
+        if (option.provincia) {
+            onChange("provincia", option.provincia);
+        }
+    };
+
+    const handleLocationClear = () => {
+        onChange("ubicacion", undefined);
+    };
 
     if (!isOpen) return null;
 
@@ -128,7 +152,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Producto y Localidad */}
+                        {/* Producto y Ubicacion */}
                         <div className="grid grid-cols-1 gap-4">
                             <ProductSelect
                                 value={currentClient.producto ?? ""}
@@ -136,13 +160,35 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                                 placeholder="Seleccionar producto"
                                 className="border-gray-300"
                             />
-                            <input
-                                type="text"
-                                placeholder="Localidad"
-                                value={currentClient.localidad}
-                                onChange={(e) => onChange("localidad", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                            />
+                            <div>
+                                <label className="text-gray-700 font-medium block mb-2">Ubicación</label>
+                                <LocationSearch
+                                    value={currentClient.ubicacion?.displayName ?? ""}
+                                    onSelect={handleLocationSelect}
+                                    onClear={handleLocationClear}
+                                />
+                                {currentClient.ubicacion?.displayName && (
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Seleccionado: {currentClient.ubicacion.displayName}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="Provincia"
+                                    value={currentClient.provincia ?? ""}
+                                    onChange={(e) => onChange("provincia", e.target.value)}
+                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Localidad"
+                                    value={currentClient.localidad ?? ""}
+                                    onChange={(e) => onChange("localidad", e.target.value)}
+                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                />
+                            </div>
                         </div>
 
                         {/* Selects: Actividad, Medio Adquisición, Estado */}

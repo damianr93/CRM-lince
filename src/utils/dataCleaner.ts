@@ -63,7 +63,7 @@ export const cleanClientData = (client: any): any => {
   // Limpiar todos los campos de texto
   const textFields = [
     'nombre', 'apellido', 'telefono', 'correo', 'producto', 
-    'localidad', 'observaciones', 'cabezas', 'mesesSuplemento'
+    'localidad', 'provincia', 'observaciones', 'cabezas', 'mesesSuplemento'
   ];
 
   textFields.forEach(field => {
@@ -140,4 +140,3 @@ export const hasValidData = (client: any): boolean => {
   // Debe tener al menos nombre
   return !!(cleaned.nombre && cleaned.nombre !== '-');
 };
-

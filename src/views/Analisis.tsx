@@ -24,7 +24,9 @@ import {
   fetchpurchaseStatus,
   fetchFollowUpEvents,
   completeFollowUpEvent,
+  fetchLocationSummary,
 } from "@/store/analytics/thunks";
+import LocationHeatmap from "@/components/LocationHeatmap";
 
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
 
@@ -77,6 +79,7 @@ export default function ClientsDashboard() {
     byProduct,
     statusPurchase,
     followUpEvents,
+    locationSummary,
   } = useSelector((state: RootState) => state.analytics);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<"READY" | "COMPLETED">("READY");
@@ -144,6 +147,7 @@ export default function ClientsDashboard() {
     dispatch(fetchAnalyticsEvolution());
     dispatch(fetchAnalyticsDemand());
     dispatch(fetchpurchaseStatus());
+    dispatch(fetchLocationSummary());
   }, [dispatch]);
 
   useEffect(() => {
@@ -197,6 +201,18 @@ export default function ClientsDashboard() {
       .join(" ")
       .trim();
   };
+
+  const locationCoverage = useMemo(() => {
+    if (!locationSummary) {
+      return { percent: 0, total: 0 };
+    }
+    const total = Math.max(locationSummary.total - locationSummary.noLocation.total, 0);
+    const percent =
+      locationSummary.total > 0
+        ? Math.round((total / locationSummary.total) * 100)
+        : 0;
+    return { percent, total };
+  }, [locationSummary]);
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -427,6 +443,72 @@ export default function ClientsDashboard() {
         </Card>
       </div>
 
+      {locationSummary && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-6">
+          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+            <CardHeader className="border-b border-gold-400/20 pb-4">
+              <CardTitle className="text-xl font-bold text-yellow-400">
+                Panorama de Ubicaciones
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-100">
+                    Cobertura de ubicación
+                  </p>
+                  <p className="text-2xl font-bold text-white">
+                    {locationCoverage.percent}%
+                  </p>
+                  <p className="text-xs text-emerald-100/80">
+                    {locationCoverage.total} clientes ubicados
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-600/30 bg-gray-800/40 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Top provincias</p>
+                  <div className="mt-2 space-y-1 text-sm text-neutral-200">
+                    {locationSummary.topProvinces.slice(0, 6).map((item) => (
+                      <div key={item.name} className="flex justify-between gap-2">
+                        <span>{item.name}</span>
+                        <span className="text-neutral-400">{item.total}</span>
+                      </div>
+                    ))}
+                    {locationSummary.topProvinces.length === 0 && (
+                      <span className="text-xs text-neutral-500">Sin datos suficientes</span>
+                    )}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-gray-600/30 bg-gray-800/40 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Top localidades</p>
+                  <div className="mt-2 space-y-1 text-sm text-neutral-200">
+                    {locationSummary.topLocalities.slice(0, 6).map((item) => (
+                      <div key={`${item.name}-${item.province}`} className="flex justify-between gap-2">
+                        <span>{item.name}</span>
+                        <span className="text-neutral-400">{item.total}</span>
+                      </div>
+                    ))}
+                    {locationSummary.topLocalities.length === 0 && (
+                      <span className="text-xs text-neutral-500">Sin datos suficientes</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+            <CardHeader className="border-b border-gold-400/20 pb-4">
+              <CardTitle className="text-xl font-bold text-yellow-400">
+                Mapa de Consultas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <LocationHeatmap provinces={locationSummary.heatmapProvinces ?? []} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-md">
         <CardHeader className="border-b border-gold-400/20 pb-4">
           <CardTitle className="text-xl font-bold text-yellow-400 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -591,6 +673,3 @@ export default function ClientsDashboard() {
     </div>
   );
 }
-
-
-

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { SaveIcon, XIcon } from "lucide-react";
 import { formatDisplayValue } from "../utils/dataCleaner";
 import ProductSelect from "./ProductSelect";
+import { LocationSearch, type LocationOption } from "./LocationSearch";
 
 export interface Column {
   field: string;
@@ -66,6 +67,7 @@ export default function CustomTable<T extends RowData>({
   /** Para inline editing: fila y campo en edición */
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; field: string } | null>(null);
   const [editingValue, setEditingValue] = useState<any>("");
+  const [editingLocation, setEditingLocation] = useState<LocationOption | null>(null);
 
   /** =========== Ordenamiento =========== */
   const [sortField, setSortField] = useState<string | null>(null);
@@ -82,9 +84,13 @@ export default function CustomTable<T extends RowData>({
         case 'producto':
         case 'localidad':
           return 180;
+        case 'ubicacion.displayName':
+          return 220;
         case 'telefono':
         case 'correo':
           return 160;
+        case 'ubicacion.fuente':
+          return 140;
         case 'cabezas':
         case 'mesesSuplemento':
           return 100;
@@ -109,13 +115,16 @@ export default function CustomTable<T extends RowData>({
   const activeColRef = useRef<number>(-1);
 
   // --------------------------------------
-  // Effects: 
-  // - cuando cambian data o totalCols, reiniciar estado de orden y anchuras
-  // - resetear 'page' cuando cambian filtros u orden
+  // Effects:
+  // - mantener datos sin resetear pagina
+  // - recalcular anchos cuando cambian columnas
+  // - resetear pagina cuando cambian filtros u orden
   // --------------------------------------
   useEffect(() => {
     setTableData(data);
-    setPage(0);
+  }, [data]);
+
+  useEffect(() => {
     // Reiniciar anchos con valores específicos por columna
     setWidths(() => {
       return columns.map(col => {
@@ -125,9 +134,13 @@ export default function CustomTable<T extends RowData>({
           case 'producto':
           case 'localidad':
             return 180;
+          case 'ubicacion.displayName':
+            return 220;
           case 'telefono':
           case 'correo':
             return 160;
+          case 'ubicacion.fuente':
+            return 140;
           case 'cabezas':
           case 'mesesSuplemento':
             return 100;
@@ -145,9 +158,7 @@ export default function CustomTable<T extends RowData>({
         }
       }).concat(actions ? [120] : []);
     });
-    setSortField(null);
-    setSortDirection(null);
-  }, [data, totalCols, columns, actions]);
+  }, [columns, actions, totalCols]);
 
   useEffect(() => {
     setPage(0);
@@ -248,6 +259,14 @@ export default function CustomTable<T extends RowData>({
   const handleNextPage = () => {
     if (page < pageCount - 1) setPage((prev) => prev + 1);
   };
+  useEffect(() => {
+    if (!pagination) {
+      return;
+    }
+    if (page > pageCount - 1) {
+      setPage(Math.max(pageCount - 1, 0));
+    }
+  }, [page, pageCount, pagination]);
   const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setRowsPerPage(parseInt(e.target.value, 10));
     setPage(0);
@@ -287,16 +306,28 @@ export default function CustomTable<T extends RowData>({
   // Inline editing: doble clic, guardar, cancelar
   // --------------------------------------
   const handleCellDoubleClick = (rowIdx: number, field: string) => {
-    if (readOnlyFields.has(field)) {
+    if (readOnlyFields.has(field) || (field.includes(".") && field !== "ubicacion.displayName")) {
       return;
     }
-    const original = paginatedData[rowIdx][field];
+    let original: any = "";
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".");
+      original =
+        paginatedData[rowIdx][parent] && paginatedData[rowIdx][parent][child] !== undefined
+          ? paginatedData[rowIdx][parent][child]
+          : "";
+    } else {
+      original = paginatedData[rowIdx][field];
+    }
     // Si es createdAt, extraer "YYYY-MM-DD"
     if (field === "createdAt" && original) {
       const isoDate = String(original).split("T")[0];
       setEditingValue(isoDate);
     } else {
       setEditingValue(original ?? "");
+    }
+    if (field === "ubicacion.displayName") {
+      setEditingLocation(null);
     }
     setEditingCell({ rowIndex: rowIdx, field });
   };
@@ -305,6 +336,47 @@ export default function CustomTable<T extends RowData>({
     if (!editingCell) return;
     const { rowIndex, field } = editingCell;
     const currentRow = paginatedData[rowIndex];
+
+    if (field === "ubicacion.displayName") {
+      if (!editingLocation) {
+        setEditingCell(null);
+        setEditingValue("");
+        return;
+      }
+      const updatedUbicacion = {
+        ...(currentRow as any).ubicacion,
+        pais: "Argentina",
+        provincia: editingLocation.provincia,
+        localidad: editingLocation.localidad,
+        zona: editingLocation.zona,
+        lat: editingLocation.lat,
+        lon: editingLocation.lon,
+        displayName: editingLocation.displayName ?? editingLocation.label,
+        fuente: editingLocation.fuente ?? "NOMINATIM",
+        esNormalizada: true,
+      };
+      setTableData((prev) => {
+        const updated = [...prev];
+        const realIdx = filteredData.findIndex((r) => r === paginatedData[rowIndex]);
+        if (realIdx >= 0) {
+          updated[realIdx] = {
+            ...updated[realIdx],
+            ubicacion: updatedUbicacion,
+          };
+        }
+        return updated;
+      });
+
+      const identifier = (currentRow as any).id || (currentRow as any)._id;
+      if (onSaveCell && identifier) {
+        onSaveCell(identifier, "ubicacion" as keyof T, updatedUbicacion);
+      }
+
+      setEditingCell(null);
+      setEditingValue("");
+      setEditingLocation(null);
+      return;
+    }
 
     // Actualizar localmente
     setTableData((prev) => {
@@ -342,6 +414,7 @@ export default function CustomTable<T extends RowData>({
   const cancelEdit = () => {
     setEditingCell(null);
     setEditingValue("");
+    setEditingLocation(null);
   };
 
   const tabFilteredData = paginatedData;
@@ -584,13 +657,30 @@ export default function CustomTable<T extends RowData>({
                           backgroundColor: isEditingThis ? '#ffffff' : undefined
                         }}
                         onDoubleClick={
-                          readOnlyFields.has(col.field)
+                          readOnlyFields.has(col.field) ||
+                          (col.field.includes(".") && col.field !== "ubicacion.displayName")
                             ? undefined
                             : () => handleCellDoubleClick(rowIndex, col.field)
                         }
                       >
                         {isEditingThis ? (
                           <div className="relative z-20 w-full bg-white rounded-md shadow-sm">
+                            {/* ====== Campo "ubicacion.displayName" ====== */}
+                            {col.field === "ubicacion.displayName" && (
+                              <LocationSearch
+                                value={editingValue || ""}
+                                compact
+                                onSelect={(option) => {
+                                  setEditingLocation(option);
+                                  setEditingValue(option.displayName ?? option.label);
+                                }}
+                                onClear={() => {
+                                  setEditingLocation(null);
+                                  setEditingValue("");
+                                }}
+                              />
+                            )}
+
                             {/* ====== Campo "createdAt" ====== */}
                             {col.field === "createdAt" && (
                               <input
@@ -693,6 +783,7 @@ export default function CustomTable<T extends RowData>({
 
                             {/* ====== Texto estandar ====== */}
                             {!(
+                              col.field === "ubicacion.displayName" ||
                               col.field === "createdAt" ||
                               col.field === "cabezas" ||
                               col.field === "mesesSuplemento" ||
@@ -711,18 +802,40 @@ export default function CustomTable<T extends RowData>({
                               />
                             )}
 
-                            {/* Icono de guardar */}
-                            <SaveIcon
-                              onClick={saveCell}
-                              className="absolute right-6 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 cursor-pointer"
-                              size={16}
-                            />
-                            {/* Icono de cancelar */}
-                            <XIcon
-                              onClick={cancelEdit}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-800 cursor-pointer"
-                              size={16}
-                            />
+                            {col.field !== "ubicacion.displayName" && (
+                              <>
+                                <SaveIcon
+                                  onClick={saveCell}
+                                  className="absolute right-6 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 cursor-pointer"
+                                  size={16}
+                                />
+                                <XIcon
+                                  onClick={cancelEdit}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-800 cursor-pointer"
+                                  size={16}
+                                />
+                              </>
+                            )}
+                            {col.field === "ubicacion.displayName" && (
+                              <div className="mt-2 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  className="inline-flex items-center gap-1 rounded border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                                >
+                                  <XIcon size={14} />
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={saveCell}
+                                  className="inline-flex items-center gap-1 rounded border border-green-200 px-2 py-1 text-xs text-green-600 hover:bg-green-50"
+                                >
+                                  <SaveIcon size={14} />
+                                  Guardar
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ) : isReconsultaColumn ? (
                           <div className="flex items-center justify-center">
