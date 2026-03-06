@@ -84,6 +84,7 @@ export default function ClientsDashboard() {
   } = useSelector((state: RootState) => state.analytics);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [comparisonEnabled, setComparisonEnabled] = useState<boolean>(false);
   const [compareYear, setCompareYear] = useState<number>(currentYear - 1);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
   const availableYears = useMemo(() => {
@@ -115,6 +116,13 @@ export default function ClientsDashboard() {
       [`y${compareYear}`]: Number(point[`y${compareYear}`] ?? 0),
     }));
   }, [yearlyComparison, selectedYear, compareYear]);
+  const selectedYearEvolutionData = useMemo(() => {
+    const monthLabels = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    return (evolution as TimePoint[]).map((point, idx) => ({
+      month: monthLabels[idx] ?? String(point.date),
+      total: Number(point.total ?? 0),
+    }));
+  }, [evolution]);
 
   const [statusFilter, setStatusFilter] = useState<"READY" | "COMPLETED">("READY");
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -177,14 +185,16 @@ export default function ClientsDashboard() {
   }, [byProduct]);
 
   useEffect(() => {
-    const yearsToCompare = Array.from(new Set([selectedYear, compareYear]));
     dispatch(fetchAnalyticsTotales(selectedYear));
     dispatch(fetchAnalyticsEvolution(selectedYear));
-    dispatch(fetchAnalyticsYearlyComparison(yearsToCompare));
+    if (comparisonEnabled && compareYear !== selectedYear) {
+      const yearsToCompare = Array.from(new Set([selectedYear, compareYear]));
+      dispatch(fetchAnalyticsYearlyComparison(yearsToCompare));
+    }
     dispatch(fetchAnalyticsDemand(selectedYear));
     dispatch(fetchpurchaseStatus(selectedYear));
     dispatch(fetchLocationSummary(selectedYear));
-  }, [dispatch, selectedYear, compareYear]);
+  }, [dispatch, selectedYear, compareYear, comparisonEnabled]);
 
   useEffect(() => {
     const normalizedAssignee = assigneeFilter.toUpperCase();
@@ -294,19 +304,30 @@ export default function ClientsDashboard() {
                 </select>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparar</span>
-                <select
-                  value={compareYear}
-                  onChange={(e) => setCompareYear(Number(e.target.value))}
-                  className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
-                >
-                  {availableYears.map((year) => (
-                    <option key={`compare-${year}`} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparativa</span>
+                <input
+                  type="checkbox"
+                  checked={comparisonEnabled}
+                  onChange={(e) => setComparisonEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-neutral-500 bg-gray-900 text-purple-400 focus:ring-purple-300"
+                />
               </div>
+              {comparisonEnabled && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparar con</span>
+                  <select
+                    value={compareYear}
+                    onChange={(e) => setCompareYear(Number(e.target.value))}
+                    className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
+                  >
+                    {availableYears.map((year) => (
+                      <option key={`compare-${year}`} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
@@ -400,13 +421,15 @@ export default function ClientsDashboard() {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              Evolucion de Consultas ({selectedYear} vs {compareYear})
+              {comparisonEnabled
+                ? `Evolucion de Consultas (${selectedYear} vs ${compareYear})`
+                : `Evolucion de Consultas (${selectedYear})`}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart
-                data={selectedComparisonData}
+                data={comparisonEnabled ? selectedComparisonData : selectedYearEvolutionData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
@@ -424,16 +447,28 @@ export default function ClientsDashboard() {
                   axisLine={{ stroke: "#6B7280" }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey={`y${selectedYear}`}
-                  name={String(selectedYear)}
-                  stroke="#A44FFF"
-                  strokeWidth={3}
-                  dot={{ r: 6 }}
-                  activeDot={{ r: 8, fill: "#FFD700" }}
-                />
-                {compareYear !== selectedYear && (
+                {comparisonEnabled ? (
+                  <Line
+                    type="monotone"
+                    dataKey={`y${selectedYear}`}
+                    name={String(selectedYear)}
+                    stroke="#A44FFF"
+                    strokeWidth={3}
+                    dot={{ r: 6 }}
+                    activeDot={{ r: 8, fill: "#FFD700" }}
+                  />
+                ) : (
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    name={String(selectedYear)}
+                    stroke="#A44FFF"
+                    strokeWidth={3}
+                    dot={{ r: 6 }}
+                    activeDot={{ r: 8, fill: "#FFD700" }}
+                  />
+                )}
+                {comparisonEnabled && compareYear !== selectedYear && (
                   <Line
                     type="monotone"
                     dataKey={`y${compareYear}`}
