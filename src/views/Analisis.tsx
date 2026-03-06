@@ -16,10 +16,11 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { AppDispatch, RootState } from "@/store/sotre";
-import type { FollowUpEvent } from "@/store/analytics/analytics";
+import type { FollowUpEvent, YearlyComparisonPoint } from "@/store/analytics/analytics";
 import {
   fetchAnalyticsTotales,
   fetchAnalyticsEvolution,
+  fetchAnalyticsYearlyComparison,
   fetchAnalyticsDemand,
   fetchpurchaseStatus,
   fetchFollowUpEvents,
@@ -75,12 +76,46 @@ export default function ClientsDashboard() {
     totales,
     byChannel,
     evolution,
+    yearlyComparison,
     byProduct,
     statusPurchase,
     followUpEvents,
     locationSummary,
   } = useSelector((state: RootState) => state.analytics);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [compareYear, setCompareYear] = useState<number>(currentYear - 1);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
+  const availableYears = useMemo(() => {
+    const years = new Set<number>([currentYear, currentYear - 1]);
+    const extractYearFromDate = (value?: string) => {
+      if (!value) return;
+      const match = String(value).match(/^(\d{4})/);
+      if (!match) return;
+      const year = Number(match[1]);
+      if (!Number.isNaN(year)) years.add(year);
+    };
+    (evolution as TimePoint[]).forEach((point) => extractYearFromDate(point.date));
+    (yearlyComparison as YearlyComparisonPoint[]).forEach((point) => {
+      Object.keys(point).forEach((key) => {
+        if (key.startsWith("y")) {
+          const year = Number(key.slice(1));
+          if (!Number.isNaN(year)) years.add(year);
+        }
+      });
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [currentYear, evolution, yearlyComparison]);
+
+  const selectedComparisonData = useMemo(() => {
+    const monthLabels = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    return (yearlyComparison as YearlyComparisonPoint[]).map((point, idx) => ({
+      month: monthLabels[idx] ?? String(point.month),
+      [`y${selectedYear}`]: Number(point[`y${selectedYear}`] ?? 0),
+      [`y${compareYear}`]: Number(point[`y${compareYear}`] ?? 0),
+    }));
+  }, [yearlyComparison, selectedYear, compareYear]);
+
   const [statusFilter, setStatusFilter] = useState<"READY" | "COMPLETED">("READY");
   const [completingId, setCompletingId] = useState<string | null>(null);
   const totalContacts = totales?.totalContacts ?? 0;
@@ -142,12 +177,14 @@ export default function ClientsDashboard() {
   }, [byProduct]);
 
   useEffect(() => {
-    dispatch(fetchAnalyticsTotales());
-    dispatch(fetchAnalyticsEvolution());
-    dispatch(fetchAnalyticsDemand());
-    dispatch(fetchpurchaseStatus());
-    dispatch(fetchLocationSummary());
-  }, [dispatch]);
+    const yearsToCompare = Array.from(new Set([selectedYear, compareYear]));
+    dispatch(fetchAnalyticsTotales(selectedYear));
+    dispatch(fetchAnalyticsEvolution(selectedYear));
+    dispatch(fetchAnalyticsYearlyComparison(yearsToCompare));
+    dispatch(fetchAnalyticsDemand(selectedYear));
+    dispatch(fetchpurchaseStatus(selectedYear));
+    dispatch(fetchLocationSummary(selectedYear));
+  }, [dispatch, selectedYear, compareYear]);
 
   useEffect(() => {
     const normalizedAssignee = assigneeFilter.toUpperCase();
@@ -241,6 +278,38 @@ export default function ClientsDashboard() {
         </div>
         <div className="flex flex-wrap gap-4 items-stretch">
           <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+            <CardContent className="p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Año</span>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                >
+                  {availableYears.map((year) => (
+                    <option key={`selected-${year}`} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparar</span>
+                <select
+                  value={compareYear}
+                  onChange={(e) => setCompareYear(Number(e.target.value))}
+                  className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
+                >
+                  {availableYears.map((year) => (
+                    <option key={`compare-${year}`} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
             <CardContent className="p-4 flex flex-col items-start sm:items-center">
               <span className="text-2xl font-bold text-yellow-400">
                 {totalContacts}
@@ -331,18 +400,18 @@ export default function ClientsDashboard() {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              Evolucion de Consultas
+              Evolucion de Consultas ({selectedYear} vs {compareYear})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart
-                data={evolution as TimePoint[]}
+                data={selectedComparisonData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                 <XAxis
-                  dataKey="date"
+                  dataKey="month"
                   stroke="#D1D5DB"
                   fontSize={12}
                   tick={{ fill: "#D1D5DB" }}
@@ -357,12 +426,24 @@ export default function ClientsDashboard() {
                 <Tooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
-                  dataKey="total"
+                  dataKey={`y${selectedYear}`}
+                  name={String(selectedYear)}
                   stroke="#A44FFF"
                   strokeWidth={3}
                   dot={{ r: 6 }}
                   activeDot={{ r: 8, fill: "#FFD700" }}
                 />
+                {compareYear !== selectedYear && (
+                  <Line
+                    type="monotone"
+                    dataKey={`y${compareYear}`}
+                    name={String(compareYear)}
+                    stroke="#22D3EE"
+                    strokeWidth={3}
+                    dot={{ r: 5 }}
+                    activeDot={{ r: 7, fill: "#22D3EE" }}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

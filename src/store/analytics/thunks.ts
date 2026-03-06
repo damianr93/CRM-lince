@@ -1,14 +1,17 @@
 import { apiFetch } from "@/utils/auth";
 import type { AppThunk } from "../sotre";
 import {
-  setLoading,
+  beginLoading,
+  endLoading,
   setError,
   setTotales,
   setByChannel,
   setEvolution,
+  setYearlyComparison,
   setByProduct,
   type ChannelData,
   type TimePoint,
+  type YearlyComparisonPoint,
   type ProductData,
   setStatusPurchase,
   setFollowUpEvents,
@@ -17,11 +20,20 @@ import {
   type LocationSummary,
 } from "./analytics";
 
-export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
-  dispatch(setLoading(true));
+const withYearQuery = (basePath: string, year?: number): string => {
+  if (!year) return basePath;
+  const qs = new URLSearchParams({ year: String(year) }).toString();
+  return `${basePath}?${qs}`;
+};
+
+export const fetchAnalyticsTotales = (year?: number): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
   dispatch(setError(null));
   try {
-    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/totales`, {});
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/totales", year)}`,
+      {},
+    );
     if (!res.ok) throw new Error("Error al cargar totales");
     const data: { totalContacts: number; totalReconsultas?: number; firstTimeContacts?: number; byChannel: ChannelData[] } = await res.json();
     const totalReconsultas = data.totalReconsultas ?? 0;
@@ -38,52 +50,84 @@ export const fetchAnalyticsTotales = (): AppThunk => async (dispatch) => {
   } catch (err: any) {
     dispatch(setError(err.message));
   } finally {
-    dispatch(setLoading(false));
+    dispatch(endLoading());
   }
 };
 
-export const fetchAnalyticsEvolution = (): AppThunk => async (dispatch) => {
-  dispatch(setLoading(true));
+export const fetchAnalyticsEvolution = (year?: number): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
   dispatch(setError(null));
   try {
-    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/evolucion`, {});
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/evolucion", year)}`,
+      {},
+    );
     if (!res.ok) throw new Error("Error al cargar evolución");
     const data: TimePoint[] = await res.json();
     dispatch(setEvolution(data));
   } catch (err: any) {
     dispatch(setError(err.message));
   } finally {
-    dispatch(setLoading(false));
+    dispatch(endLoading());
   }
 };
 
-export const fetchAnalyticsDemand = (): AppThunk => async (dispatch) => {
-  dispatch(setLoading(true));
+export const fetchAnalyticsYearlyComparison = (years: number[]): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
   dispatch(setError(null));
   try {
-    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/demand-of-product`, {});
+    const params = new URLSearchParams();
+    if (years.length > 0) {
+      params.set("years", years.join(","));
+    }
+    const query = params.toString();
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}/analytics/yearly-comparison${query ? `?${query}` : ""}`,
+      {},
+    );
+    if (!res.ok) throw new Error("Error al cargar comparación anual");
+    const data: YearlyComparisonPoint[] = await res.json();
+    dispatch(setYearlyComparison(data));
+  } catch (err: any) {
+    dispatch(setError(err.message));
+  } finally {
+    dispatch(endLoading());
+  }
+};
+
+export const fetchAnalyticsDemand = (year?: number): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
+  dispatch(setError(null));
+  try {
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/demand-of-product", year)}`,
+      {},
+    );
     if (!res.ok) throw new Error("Error al cargar demanda de producto");
     const data: ProductData[] = await res.json();
     dispatch(setByProduct(data));
   } catch (err: any) {
     dispatch(setError(err.message));
   } finally {
-    dispatch(setLoading(false));
+    dispatch(endLoading());
   }
 };
 
-export const fetchpurchaseStatus = (): AppThunk => async (dispatch) => {
-  dispatch(setLoading(true));
+export const fetchpurchaseStatus = (year?: number): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
   dispatch(setError(null));
   try {
-    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/status`, {});
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/status", year)}`,
+      {},
+    );
     if (!res.ok) throw new Error("Error al cargar estado de compras");
     const data = await res.json();
     dispatch(setStatusPurchase(data));
   } catch (err: any) {
     dispatch(setError(err.message));
   } finally {
-    dispatch(setLoading(false));
+    dispatch(endLoading());
   }
 }
 
@@ -146,14 +190,20 @@ export const completeFollowUpEvent =
     }
   };
 
-export const fetchLocationSummary = (): AppThunk => async (dispatch) => {
+export const fetchLocationSummary = (year?: number): AppThunk => async (dispatch) => {
+  dispatch(beginLoading());
   dispatch(setError(null));
   try {
-    const res = await apiFetch(`${import.meta.env.VITE_API_URL}/analytics/location-summary`, {});
+    const res = await apiFetch(
+      `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/location-summary", year)}`,
+      {},
+    );
     if (!res.ok) throw new Error("Error al cargar resumen de ubicaciones");
     const data: LocationSummary = await res.json();
     dispatch(setLocationSummary(data));
   } catch (err: any) {
     dispatch(setError(err.message));
+  } finally {
+    dispatch(endLoading());
   }
 };

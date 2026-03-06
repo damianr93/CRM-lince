@@ -1,4 +1,4 @@
-﻿import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 export interface ChannelData {
   channel: string;
@@ -8,6 +8,11 @@ export interface ChannelData {
 export interface TimePoint {
   date: string;
   total: number;
+}
+
+export interface YearlyComparisonPoint {
+  month: string;
+  [key: string]: string | number;
 }
 
 export interface StatusPoint {
@@ -64,10 +69,12 @@ export interface FollowUpEvent {
 
 interface AnalyticsState {
   loading: boolean;
+  pendingRequests: number;
   error: string | null;
   totales: TotalsSummary;                  
   byChannel: ChannelData[];       
   evolution: TimePoint[];        
+  yearlyComparison: YearlyComparisonPoint[];
   byProduct: ProductData[];
   statusPurchase: StatusPoint[];
   followUpEvents: FollowUpEvent[];
@@ -76,6 +83,7 @@ interface AnalyticsState {
 
 const initialState: AnalyticsState = {
   loading: false,
+  pendingRequests: 0,
   error: null,
   totales: {
     totalContacts: 0,
@@ -84,6 +92,7 @@ const initialState: AnalyticsState = {
   },
   byChannel: [],
   evolution: [],
+  yearlyComparison: [],
   byProduct: [],
   statusPurchase: [],
   followUpEvents: [],
@@ -97,6 +106,14 @@ const analyticsSlice = createSlice({
     // para indicar que arrancÃ³ una carga
     setLoading(state, action) {
       state.loading = action.payload;
+    },
+    beginLoading(state) {
+      state.pendingRequests += 1;
+      state.loading = state.pendingRequests > 0;
+    },
+    endLoading(state) {
+      state.pendingRequests = Math.max(state.pendingRequests - 1, 0);
+      state.loading = state.pendingRequests > 0;
     },
     // para setear un error (string o null)
     setError(state, action) {
@@ -114,6 +131,9 @@ const analyticsSlice = createSlice({
     // para guardar la evoluciÃ³n mensual
     setEvolution(state, action) {
       state.evolution = action.payload;
+    },
+    setYearlyComparison(state, action) {
+      state.yearlyComparison = action.payload;
     },
     // para guardar la demanda por producto
     setByProduct(state, action) {
@@ -133,10 +153,13 @@ const analyticsSlice = createSlice({
 
 export const {
   setLoading,
+  beginLoading,
+  endLoading,
   setError,
   setTotales,
   setByChannel,
   setEvolution,
+  setYearlyComparison,
   setByProduct,
   setStatusPurchase,
   setFollowUpEvents,
