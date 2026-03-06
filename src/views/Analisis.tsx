@@ -21,11 +21,13 @@ import {
   fetchAnalyticsTotales,
   fetchAnalyticsEvolution,
   fetchAnalyticsYearlyComparison,
+  fetchAnalyticsComparisonSnapshot,
   fetchAnalyticsDemand,
   fetchpurchaseStatus,
   fetchFollowUpEvents,
   completeFollowUpEvent,
   fetchLocationSummary,
+  type AnalyticsComparisonSnapshot,
 } from "@/store/analytics/thunks";
 
 const COLORS = ["#FFD700", "#A44FFF", "#E10600", "#7E00FF", "#F59E0B"];
@@ -68,6 +70,11 @@ const formatDateTime = (isoDate: string) => {
   }
 };
 
+function toSafeNumber(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export default function ClientsDashboard() {
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -84,8 +91,10 @@ export default function ClientsDashboard() {
   } = useSelector((state: RootState) => state.analytics);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [comparisonEnabled, setComparisonEnabled] = useState<boolean>(false);
+  const [comparisonMode, setComparisonMode] = useState<"none" | "compare">("none");
   const [compareYear, setCompareYear] = useState<number>(currentYear - 1);
+  const comparisonEnabled = comparisonMode === "compare" && compareYear !== selectedYear;
+  const [comparisonSnapshot, setComparisonSnapshot] = useState<AnalyticsComparisonSnapshot | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
   const availableYears = useMemo(() => {
     const years = new Set<number>([currentYear, currentYear - 1]);
@@ -184,6 +193,73 @@ export default function ClientsDashboard() {
     );
   }, [byProduct]);
 
+  const comparisonByChannel = useMemo(() => {
+    if (!comparisonSnapshot) return [];
+    const selectedMap = new Map(
+      (byChannel as ChannelData[]).map((item) => [item.channel, toSafeNumber(item.total)]),
+    );
+    const compareMap = new Map(
+      (comparisonSnapshot.byChannel as ChannelData[]).map((item) => [item.channel, toSafeNumber(item.total)]),
+    );
+    const channels = Array.from(new Set([...selectedMap.keys(), ...compareMap.keys()]));
+    return channels
+      .map((channel) => {
+        const selectedTotal = selectedMap.get(channel) ?? 0;
+        const compareTotal = compareMap.get(channel) ?? 0;
+        return { channel, selectedTotal, compareTotal, delta: selectedTotal - compareTotal };
+      })
+      .sort((a, b) => b.selectedTotal - a.selectedTotal);
+  }, [byChannel, comparisonSnapshot]);
+
+  const comparisonByProduct = useMemo(() => {
+    if (!comparisonSnapshot) return [];
+    const sanitize = (items: ProductData[]) =>
+      items.filter((item) => {
+        const v = String(item.product ?? "").trim().toLowerCase();
+        return v && v !== "-" && v !== "sin dato" && v !== "null" && v !== "undefined";
+      });
+    const selectedMap = new Map(
+      sanitize(filteredByProduct as ProductData[]).map((item) => [item.product, toSafeNumber(item.total)]),
+    );
+    const compareMap = new Map(
+      sanitize(comparisonSnapshot.byProduct as ProductData[]).map((item) => [item.product, toSafeNumber(item.total)]),
+    );
+    const products = Array.from(new Set([...selectedMap.keys(), ...compareMap.keys()]));
+    return products
+      .map((product) => {
+        const selectedTotal = selectedMap.get(product) ?? 0;
+        const compareTotal = compareMap.get(product) ?? 0;
+        return { product, selectedTotal, compareTotal, delta: selectedTotal - compareTotal };
+      })
+      .sort((a, b) => Math.max(b.selectedTotal, b.compareTotal) - Math.max(a.selectedTotal, a.compareTotal))
+      .slice(0, 10);
+  }, [filteredByProduct, comparisonSnapshot]);
+
+  const comparisonStatusData = useMemo(() => {
+    if (!comparisonSnapshot) return [];
+    const selectedMap = new Map(
+      (statusPurchase as StatusPoint[]).map((item) => [item.status, toSafeNumber(item.total)]),
+    );
+    const compareMap = new Map(
+      comparisonSnapshot.statusPurchase.map((item) => [item.status, toSafeNumber(item.total)]),
+    );
+    const statuses = ["Compras", "No Compras", "Pendientes"];
+    return statuses.map((status) => ({
+      status,
+      selectedTotal: selectedMap.get(status) ?? 0,
+      compareTotal: compareMap.get(status) ?? 0,
+    }));
+  }, [statusPurchase, comparisonSnapshot]);
+
+  useEffect(() => {
+    if (compareYear === selectedYear) {
+      const fallback = availableYears.find((year) => year !== selectedYear);
+      if (fallback) {
+        setCompareYear(fallback);
+      }
+    }
+  }, [availableYears, selectedYear, compareYear]);
+
   useEffect(() => {
     dispatch(fetchAnalyticsTotales(selectedYear));
     dispatch(fetchAnalyticsEvolution(selectedYear));
@@ -195,6 +271,24 @@ export default function ClientsDashboard() {
     dispatch(fetchpurchaseStatus(selectedYear));
     dispatch(fetchLocationSummary(selectedYear));
   }, [dispatch, selectedYear, compareYear, comparisonEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!comparisonEnabled) {
+      setComparisonSnapshot(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    dispatch(fetchAnalyticsComparisonSnapshot(compareYear)).then((result) => {
+      if (!cancelled) {
+        setComparisonSnapshot(result);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, comparisonEnabled, compareYear]);
 
   useEffect(() => {
     const normalizedAssignee = assigneeFilter.toUpperCase();
@@ -259,6 +353,86 @@ export default function ClientsDashboard() {
         : 0;
     return { percent, total };
   }, [locationSummary]);
+  const compareLocationCoverage = useMemo(() => {
+    if (!comparisonSnapshot?.locationSummary) {
+      return { percent: 0, total: 0 };
+    }
+    const total = Math.max(
+      comparisonSnapshot.locationSummary.total - comparisonSnapshot.locationSummary.noLocation.total,
+      0,
+    );
+    const percent =
+      comparisonSnapshot.locationSummary.total > 0
+        ? Math.round((total / comparisonSnapshot.locationSummary.total) * 100)
+        : 0;
+    return { percent, total };
+  }, [comparisonSnapshot]);
+  const formatDelta = (delta: number) => {
+    if (delta === 0) return "0";
+    return delta > 0 ? `+${delta}` : `${delta}`;
+  };
+
+  const comparisonChannelChartData = useMemo(() => {
+    if (!comparisonEnabled) return [];
+    if (comparisonByChannel.length > 0) return comparisonByChannel;
+    return (byChannel as ChannelData[]).map((item) => ({
+      channel: item.channel,
+      selectedTotal: toSafeNumber(item.total),
+      compareTotal: 0,
+      delta: toSafeNumber(item.total),
+    }));
+  }, [comparisonEnabled, comparisonByChannel, byChannel]);
+
+  const comparisonProductChartData = useMemo(() => {
+    if (!comparisonEnabled) return [];
+    if (comparisonByProduct.length > 0) return comparisonByProduct;
+    return (filteredByProduct as ProductData[]).map((item) => ({
+      product: item.product,
+      selectedTotal: toSafeNumber(item.total),
+      compareTotal: 0,
+      delta: toSafeNumber(item.total),
+    }));
+  }, [comparisonEnabled, comparisonByProduct, filteredByProduct]);
+
+  const normalizedComparisonChannelData = useMemo(
+    () =>
+      comparisonChannelChartData.map((item) => ({
+        ...item,
+        selectedTotal: toSafeNumber(item.selectedTotal),
+        compareTotal: toSafeNumber(item.compareTotal),
+      })),
+    [comparisonChannelChartData],
+  );
+
+  const normalizedComparisonProductData = useMemo(
+    () =>
+      comparisonProductChartData.map((item) => ({
+        ...item,
+        selectedTotal: toSafeNumber(item.selectedTotal),
+        compareTotal: toSafeNumber(item.compareTotal),
+      })),
+    [comparisonProductChartData],
+  );
+  const maxChannelComparisonValue = useMemo(() => {
+    if (normalizedComparisonChannelData.length === 0) return 1;
+    return Math.max(
+      1,
+      ...normalizedComparisonChannelData.flatMap((item) => [
+        toSafeNumber(item.selectedTotal),
+        toSafeNumber(item.compareTotal),
+      ]),
+    );
+  }, [normalizedComparisonChannelData]);
+  const maxProductComparisonValue = useMemo(() => {
+    if (normalizedComparisonProductData.length === 0) return 1;
+    return Math.max(
+      1,
+      ...normalizedComparisonProductData.flatMap((item) => [
+        toSafeNumber(item.selectedTotal),
+        toSafeNumber(item.compareTotal),
+      ]),
+    );
+  }, [normalizedComparisonProductData]);
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -285,51 +459,51 @@ export default function ClientsDashboard() {
           <p className="text-neutral-300 text-lg">
             Contactos, canales de adquisicion y productos consultados
           </p>
-        </div>
-        <div className="flex flex-wrap gap-4 items-stretch">
-          <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
-            <CardContent className="p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Año</span>
+          <div className="mt-4 flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Año</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+              >
+                {availableYears.map((year) => (
+                  <option key={`selected-${year}`} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Vista</span>
+              <select
+                value={comparisonMode}
+                onChange={(e) => setComparisonMode(e.target.value as "none" | "compare")}
+                className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
+              >
+                <option value="none">Solo año seleccionado</option>
+                <option value="compare">Comparar con otro año</option>
+              </select>
+            </div>
+            {comparisonMode === "compare" && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparar con</span>
                 <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                  value={compareYear}
+                  onChange={(e) => setCompareYear(Number(e.target.value))}
+                  className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
                 >
-                  {availableYears.map((year) => (
-                    <option key={`selected-${year}`} value={year}>
+                  {availableYears.filter((year) => year !== selectedYear).map((year) => (
+                    <option key={`compare-${year}`} value={year}>
                       {year}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparativa</span>
-                <input
-                  type="checkbox"
-                  checked={comparisonEnabled}
-                  onChange={(e) => setComparisonEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-500 bg-gray-900 text-purple-400 focus:ring-purple-300"
-                />
-              </div>
-              {comparisonEnabled && (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">Comparar con</span>
-                  <select
-                    value={compareYear}
-                    onChange={(e) => setCompareYear(Number(e.target.value))}
-                    className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
-                  >
-                    {availableYears.map((year) => (
-                      <option key={`compare-${year}`} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-4 items-stretch">
           <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
             <CardContent className="p-4 flex flex-col items-start sm:items-center">
               <span className="text-2xl font-bold text-yellow-400">
@@ -339,6 +513,11 @@ export default function ClientsDashboard() {
               <span className="text-xs text-neutral-500 mt-1">
                 Primer ingreso: {firstTimeContacts}
               </span>
+              {comparisonEnabled && comparisonSnapshot && (
+                <span className="text-xs text-cyan-300 mt-1">
+                  {compareYear}: {comparisonSnapshot.totales.totalContacts} ({formatDelta(totalContacts - comparisonSnapshot.totales.totalContacts)})
+                </span>
+              )}
             </CardContent>
           </Card>
           <Card className="w-full sm:w-auto bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-400/30 backdrop-blur-sm">
@@ -352,6 +531,11 @@ export default function ClientsDashboard() {
               <span className="text-sm text-amber-100/80">
                 {reconsultaRatio}% del total
               </span>
+              {comparisonEnabled && comparisonSnapshot && (
+                <span className="text-xs text-amber-100/70">
+                  {compareYear}: {comparisonSnapshot.totales.totalReconsultas ?? 0} ({formatDelta(totalReconsultas - (comparisonSnapshot.totales.totalReconsultas ?? 0))})
+                </span>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -359,19 +543,24 @@ export default function ClientsDashboard() {
 
       {/* Grid de canales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        {byChannel.map((c: ChannelData) => (
+        {(comparisonEnabled ? normalizedComparisonChannelData : (byChannel as ChannelData[])).map((c: any) => (
           <Card
-            key={c.channel}
+            key={c.channel ?? c?.channel}
             className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-gold-400/10 backdrop-blur-sm"
           >
             <CardContent className="p-4 flex flex-col items-start">
               <span className="text-lg font-semibold text-neutral-200">
-                {c.channel.charAt(0).toUpperCase() + c.channel.slice(1).toLowerCase()}
+                {String(c.channel).charAt(0).toUpperCase() + String(c.channel).slice(1).toLowerCase()}
               </span>
               <span className="mt-1 text-2xl font-bold text-yellow-400">
-                {c.total}
+                {comparisonEnabled ? c.selectedTotal : c.total}
               </span>
               <span className="text-xs text-neutral-400">Contactos</span>
+              {comparisonEnabled && (
+                <span className="text-xs text-cyan-300 mt-1">
+                  {compareYear}: {c.compareTotal} ({formatDelta(c.delta)})
+                </span>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -387,33 +576,65 @@ export default function ClientsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={byChannel as ChannelData[]}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis
-                  dataKey="channel"
-                  stroke="#D1D5DB"
-                  fontSize={12}
-                  tick={{ fill: "#D1D5DB" }}
-                  axisLine={{ stroke: "#6B7280" }}
-                />
-                <YAxis
-                  stroke="#D1D5DB"
-                  fontSize={12}
-                  tick={{ fill: "#D1D5DB" }}
-                  axisLine={{ stroke: "#6B7280" }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                  {(byChannel as ChannelData[]).map((_, idx) => (
-                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {comparisonEnabled ? (
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                {normalizedComparisonChannelData.map((item) => (
+                  <div
+                    key={item.channel}
+                    className="rounded-lg border border-gray-600/40 bg-gray-900/60 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-neutral-100">{item.channel}</span>
+                      <span className="text-xs text-neutral-400">
+                        {selectedYear}: {item.selectedTotal} | {compareYear}: {item.compareTotal} | Δ {formatDelta(item.delta)}
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                        <div
+                          className="h-full bg-yellow-400"
+                          style={{ width: `${(toSafeNumber(item.selectedTotal) / maxChannelComparisonValue) * 100}%` }}
+                        />
+                      </div>
+                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                        <div
+                          className="h-full bg-cyan-400"
+                          style={{ width: `${(toSafeNumber(item.compareTotal) / maxChannelComparisonValue) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  data={byChannel as ChannelData[]}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis
+                    dataKey="channel"
+                    stroke="#D1D5DB"
+                    fontSize={12}
+                    tick={{ fill: "#D1D5DB" }}
+                    axisLine={{ stroke: "#6B7280" }}
+                  />
+                  <YAxis
+                    stroke="#D1D5DB"
+                    fontSize={12}
+                    tick={{ fill: "#D1D5DB" }}
+                    axisLine={{ stroke: "#6B7280" }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                    {(byChannel as ChannelData[]).map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -488,41 +709,77 @@ export default function ClientsDashboard() {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              Productos mas Consultados
+              {comparisonEnabled
+                ? `Productos mas Consultados (${selectedYear} vs ${compareYear})`
+                : "Productos mas Consultados"}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                layout="vertical"
-                data={filteredByProduct}
-                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis
-                  type="number"
-                  stroke="#D1D5DB"
-                  fontSize={12}
-                  tick={{ fill: "#D1D5DB" }}
-                  axisLine={{ stroke: "#6B7280" }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="product"
-                  stroke="#D1D5DB"
-                  fontSize={10}
-                  width={5}
-                  tick={false}
-                  axisLine={{ stroke: "#6B7280" }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                  {filteredByProduct.map((_, idx) => (
-                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {comparisonEnabled ? (
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                {normalizedComparisonProductData.map((item) => (
+                  <div
+                    key={item.product}
+                    className="rounded-lg border border-gray-600/40 bg-gray-900/60 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-neutral-100 truncate max-w-[60%]">
+                        {item.product}
+                      </span>
+                      <span className="text-xs text-neutral-400">
+                        {selectedYear}: {item.selectedTotal} | {compareYear}: {item.compareTotal} | Δ {formatDelta(item.delta)}
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                        <div
+                          className="h-full bg-yellow-400"
+                          style={{ width: `${(toSafeNumber(item.selectedTotal) / maxProductComparisonValue) * 100}%` }}
+                        />
+                      </div>
+                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                        <div
+                          className="h-full bg-cyan-400"
+                          style={{ width: `${(toSafeNumber(item.compareTotal) / maxProductComparisonValue) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  layout="vertical"
+                  data={filteredByProduct}
+                  margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis
+                    type="number"
+                    stroke="#D1D5DB"
+                    fontSize={12}
+                    tick={{ fill: "#D1D5DB" }}
+                    axisLine={{ stroke: "#6B7280" }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="product"
+                    stroke="#D1D5DB"
+                    fontSize={10}
+                    width={120}
+                    tick={{ fill: "#D1D5DB" }}
+                    axisLine={{ stroke: "#6B7280" }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                    {filteredByProduct.map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -530,29 +787,42 @@ export default function ClientsDashboard() {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
             <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-              Estado de Compras
+              {comparisonEnabled
+                ? `Estado de Compras (${selectedYear} vs ${compareYear})`
+                : "Estado de Compras"}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={statusPurchase as StatusPoint[]}
-                  dataKey="percentage"
-                  nameKey="status"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={70}
-                  label={({ name, percent }) =>
-                    `${name}: ${Math.round(percent * 100)}%`
-                  }
-                >
-                  {(statusPurchase as StatusPoint[]).map((_, idx) => (
-                    <Cell key={`slice-${idx}`} fill={COLORS[idx % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
+              {comparisonEnabled ? (
+                <BarChart data={comparisonStatusData} margin={{ top: 20, right: 20, left: 10, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="status" stroke="#D1D5DB" fontSize={12} tick={{ fill: "#D1D5DB" }} />
+                  <YAxis stroke="#D1D5DB" fontSize={12} tick={{ fill: "#D1D5DB" }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="selectedTotal" name={String(selectedYear)} fill="#FFD700" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="compareTotal" name={String(compareYear)} fill="#22D3EE" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              ) : (
+                <PieChart>
+                  <Pie
+                    data={statusPurchase as StatusPoint[]}
+                    dataKey="percentage"
+                    nameKey="status"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={70}
+                    label={({ name, percent }) =>
+                      `${name}: ${Math.round(percent * 100)}%`
+                    }
+                  >
+                    {(statusPurchase as StatusPoint[]).map((_, idx) => (
+                      <Cell key={`slice-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -578,6 +848,11 @@ export default function ClientsDashboard() {
                   <p className="text-xs text-emerald-100/80">
                     {locationCoverage.total} clientes ubicados
                   </p>
+                  {comparisonEnabled && comparisonSnapshot?.locationSummary && (
+                    <p className="text-xs text-cyan-200 mt-1">
+                      {compareYear}: {compareLocationCoverage.percent}% ({formatDelta(locationCoverage.percent - compareLocationCoverage.percent)} pts)
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-lg border border-gray-600/30 bg-gray-800/40 p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Top provincias</p>
@@ -585,7 +860,15 @@ export default function ClientsDashboard() {
                     {locationSummary.topProvinces.slice(0, 6).map((item) => (
                       <div key={item.name} className="flex justify-between gap-2">
                         <span>{item.name}</span>
-                        <span className="text-neutral-400">{item.total}</span>
+                        {comparisonEnabled && comparisonSnapshot?.locationSummary ? (
+                          <span className="text-neutral-400">
+                            {item.total} / {
+                              comparisonSnapshot.locationSummary.topProvinces.find((p) => p.name === item.name)?.total ?? 0
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400">{item.total}</span>
+                        )}
                       </div>
                     ))}
                     {locationSummary.topProvinces.length === 0 && (
@@ -599,7 +882,15 @@ export default function ClientsDashboard() {
                     {locationSummary.topLocalities.slice(0, 6).map((item) => (
                       <div key={`${item.name}-${item.province}`} className="flex justify-between gap-2">
                         <span>{item.name}</span>
-                        <span className="text-neutral-400">{item.total}</span>
+                        {comparisonEnabled && comparisonSnapshot?.locationSummary ? (
+                          <span className="text-neutral-400">
+                            {item.total} / {
+                              comparisonSnapshot.locationSummary.topLocalities.find((l) => l.name === item.name && l.province === item.province)?.total ?? 0
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400">{item.total}</span>
+                        )}
                       </div>
                     ))}
                     {locationSummary.topLocalities.length === 0 && (

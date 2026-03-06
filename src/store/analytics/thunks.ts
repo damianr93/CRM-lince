@@ -20,6 +20,15 @@ import {
   type LocationSummary,
 } from "./analytics";
 
+export interface AnalyticsComparisonSnapshot {
+  year: number;
+  totales: { totalContacts: number; totalReconsultas?: number; firstTimeContacts?: number };
+  byChannel: ChannelData[];
+  byProduct: ProductData[];
+  statusPurchase: Array<{ status: string; total: number; percentage: number }>;
+  locationSummary: LocationSummary | null;
+}
+
 const withYearQuery = (basePath: string, year?: number): string => {
   if (!year) return basePath;
   const qs = new URLSearchParams({ year: String(year) }).toString();
@@ -207,3 +216,56 @@ export const fetchLocationSummary = (year?: number): AppThunk => async (dispatch
     dispatch(endLoading());
   }
 };
+
+export const fetchAnalyticsComparisonSnapshot =
+  (year: number): AppThunk<Promise<AnalyticsComparisonSnapshot | null>> =>
+  async (dispatch) => {
+    dispatch(beginLoading());
+    dispatch(setError(null));
+    try {
+      const [totalesRes, demandRes, statusRes, locationRes] = await Promise.all([
+        apiFetch(`${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/totales", year)}`, {}),
+        apiFetch(
+          `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/demand-of-product", year)}`,
+          {},
+        ),
+        apiFetch(`${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/status", year)}`, {}),
+        apiFetch(
+          `${import.meta.env.VITE_API_URL}${withYearQuery("/analytics/location-summary", year)}`,
+          {},
+        ),
+      ]);
+
+      if (!totalesRes.ok) throw new Error("Error al cargar totales comparativos");
+      if (!demandRes.ok) throw new Error("Error al cargar productos comparativos");
+      if (!statusRes.ok) throw new Error("Error al cargar estado comparativo");
+      if (!locationRes.ok) throw new Error("Error al cargar ubicaciones comparativas");
+
+      const totalsPayload = await totalesRes.json();
+      const byProduct = (await demandRes.json()) as ProductData[];
+      const statusPurchase = (await statusRes.json()) as Array<{
+        status: string;
+        total: number;
+        percentage: number;
+      }>;
+      const locationSummary = (await locationRes.json()) as LocationSummary;
+
+      return {
+        year,
+        totales: {
+          totalContacts: totalsPayload.totalContacts ?? 0,
+          totalReconsultas: totalsPayload.totalReconsultas ?? 0,
+          firstTimeContacts: totalsPayload.firstTimeContacts ?? 0,
+        },
+        byChannel: (totalsPayload.byChannel ?? []) as ChannelData[],
+        byProduct,
+        statusPurchase,
+        locationSummary,
+      };
+    } catch (err: any) {
+      dispatch(setError(err.message));
+      return null;
+    } finally {
+      dispatch(endLoading());
+    }
+  };
