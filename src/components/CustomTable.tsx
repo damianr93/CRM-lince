@@ -60,7 +60,7 @@ export default function CustomTable<T extends RowData>({
   /** Filtros adicionales */
   const [dateFrom, setDateFrom] = useState<string>(""); // formato "YYYY-MM-DD"
   const [dateTo, setDateTo] = useState<string>(""); // formato "YYYY-MM-DD"
-  const seguimientoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
+  const seguimientoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "JULIAN", "SIN_ASIGNAR"];
   const [siguiendoChecks, setSiguiendoChecks] = useState<string[]>([]);
   const readOnlyFields = useMemo(() => new Set(["isReconsulta"]), []);
 

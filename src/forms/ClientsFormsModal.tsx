@@ -21,7 +21,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
     onSubmit,
     onChange,
 }) => {
-    const siguiendoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "SIN_ASIGNAR"];
+    const siguiendoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "JULIAN", "SIN_ASIGNAR"];
     const handleLocationSelect = (option: LocationOption) => {
         onChange("ubicacion", {
             pais: undefined,

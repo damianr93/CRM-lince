@@ -31,7 +31,7 @@ export interface Client {
   estado?: "PENDIENTE" | "COMPRO" | "NO_COMPRO";
   observaciones?: string;
   createdAt?: string;
-  siguiendo?: "EZEQUIEL" | "DENIS" | "MARTIN" | "SIN_ASIGNAR";
+  siguiendo?: "EZEQUIEL" | "DENIS" | "MARTIN" | "JULIAN" | "SIN_ASIGNAR";
   updatedAt?: string;
   isReconsulta?: boolean;
 }
