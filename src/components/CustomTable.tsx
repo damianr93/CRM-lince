@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { SaveIcon, XIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, SaveIcon, XIcon } from "lucide-react";
 import { formatDisplayValue } from "../utils/dataCleaner";
 import ProductSelect from "./ProductSelect";
 import { LocationSearch, type LocationOption } from "./LocationSearch";
@@ -58,10 +58,12 @@ export default function CustomTable<T extends RowData>({
   const [searchTerm, setSearchTerm] = useState("");
 
   /** Filtros adicionales */
-  const [dateFrom, setDateFrom] = useState<string>(""); // formato "YYYY-MM-DD"
-  const [dateTo, setDateTo] = useState<string>(""); // formato "YYYY-MM-DD"
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const seguimientoOptions = ["EZEQUIEL", "DENIS", "MARTIN", "JULIAN", "SIN_ASIGNAR"];
   const [siguiendoChecks, setSiguiendoChecks] = useState<string[]>([]);
+  const [reconsultaFilter, setReconsultaFilter] = useState<"ALL" | "RECONSULTAS" | "ORIGINAL">("ALL");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const readOnlyFields = useMemo(() => new Set(["isReconsulta"]), []);
 
   /** Para inline editing: fila y campo en edición */
@@ -162,7 +164,7 @@ export default function CustomTable<T extends RowData>({
 
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, searchColumn, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks]);
+  }, [searchTerm, searchColumn, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks, reconsultaFilter]);
 
   // --------------------------------------
   // Filtrado + Ordenamiento
@@ -170,7 +172,14 @@ export default function CustomTable<T extends RowData>({
   const filteredData = useMemo(() => {
     let temp = tableData;
 
-    // 0) Filtrar por rango de fechas (createdAt) si se especifica
+    // 0a) Filtrar por reconsulta
+    if (reconsultaFilter === "RECONSULTAS") {
+      temp = temp.filter((row) => Boolean(row["isReconsulta"]));
+    } else if (reconsultaFilter === "ORIGINAL") {
+      temp = temp.filter((row) => !row["isReconsulta"]);
+    }
+
+    // 0b) Filtrar por rango de fechas (createdAt) si se especifica
     if (dateFrom || dateTo) {
       temp = temp.filter((row) => {
         const raw = row["createdAt"];
@@ -243,7 +252,7 @@ export default function CustomTable<T extends RowData>({
     }
 
     return temp;
-  }, [tableData, searchColumn, searchTerm, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks]);
+  }, [tableData, searchColumn, searchTerm, sortField, sortDirection, dateFrom, dateTo, siguiendoChecks, reconsultaFilter]);
 
   // --------------------------------------
   // Paginación
@@ -419,6 +428,34 @@ export default function CustomTable<T extends RowData>({
 
   const tabFilteredData = paginatedData;
 
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchColumn && searchTerm) count++;
+    if (dateFrom) count++;
+    if (dateTo) count++;
+    if (siguiendoChecks.length > 0) count++;
+    if (reconsultaFilter !== "ALL") count++;
+    return count;
+  }, [searchColumn, searchTerm, dateFrom, dateTo, siguiendoChecks, reconsultaFilter]);
+
+  const activeAdvancedCount = useMemo(() => {
+    let count = 0;
+    if (dateFrom) count++;
+    if (dateTo) count++;
+    if (siguiendoChecks.length > 0) count++;
+    if (reconsultaFilter !== "ALL") count++;
+    return count;
+  }, [dateFrom, dateTo, siguiendoChecks, reconsultaFilter]);
+
+  const clearFilters = () => {
+    setSearchColumn("");
+    setSearchTerm("");
+    setDateFrom("");
+    setDateTo("");
+    setSiguiendoChecks([]);
+    setReconsultaFilter("ALL");
+  };
+
   /** Opciones para selects en ciertos campos */
   const actividades = ["CRIA", "RECRIA", "MIXTO", "DISTRIBUIDOR"];
   const medios = ["INSTAGRAM", "WEB", "WHATSAPP", "FACEBOOK", "OTRO"];
@@ -464,88 +501,136 @@ export default function CustomTable<T extends RowData>({
   // --------------------------------------
   return (
     <div className="w-full">
-      {/* ============== FILTROS RESPONSIVOS ============== */}
-      <div className="bg-gray-800/60 border border-gray-700/40 p-4 rounded-lg mb-4 space-y-4">
-        {/* Fila 1: Filtro de búsqueda por columna */}
-        <div className="flex flex-col sm:flex-row gap-2">
+      {/* ============== FILTROS ============== */}
+      <div className="mb-4 bg-muted/50 dark:bg-gray-800/60 border border-border rounded-lg overflow-hidden">
+        {/* Capa 1: búsqueda siempre visible */}
+        <div className="flex flex-col sm:flex-row gap-2 p-3">
           <select
-            className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:w-auto min-w-0 sm:min-w-[180px]"
+            className="border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:w-auto min-w-0 sm:min-w-[180px] text-sm"
             value={searchColumn}
-            onChange={(e) => {
-              setSearchColumn(e.target.value);
-              setSearchTerm("");
-            }}
+            onChange={(e) => { setSearchColumn(e.target.value); setSearchTerm(""); }}
           >
             <option value="">Buscar por...</option>
             {columns.map((col) => (
-              <option key={col.field} value={col.field}>
-                {col.headerName}
-              </option>
+              <option key={col.field} value={col.field}>{col.headerName}</option>
             ))}
           </select>
           <input
             type="text"
-            className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 placeholder:text-neutral-500"
+            className="border border-input bg-background rounded-lg px-3 py-2 text-foreground flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 placeholder:text-muted-foreground text-sm"
             placeholder="Valor a buscar"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={!searchColumn}
           />
+          {/* Toggle filtros avanzados */}
+          <button
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors whitespace-nowrap ${
+              advancedOpen
+                ? "border-yellow-400/40 bg-yellow-400/10 text-gray-700 dark:text-yellow-300"
+                : "border-border text-muted-foreground hover:border-gray-400 dark:hover:border-gray-600 hover:text-foreground"
+            }`}
+            onClick={() => setAdvancedOpen((o) => !o)}
+          >
+            {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            <span>Avanzado</span>
+            {activeAdvancedCount > 0 && (
+              <span className="inline-flex items-center rounded-full bg-yellow-400/20 px-1.5 py-0.5 text-xs font-semibold text-gray-700 dark:text-yellow-300">
+                {activeAdvancedCount}
+              </span>
+            )}
+          </button>
+          {activeFiltersCount > 0 && (
+            <button
+              className="px-3 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:text-yellow-500 dark:hover:text-gray-700 dark:text-yellow-300 hover:border-yellow-400/50 transition-colors whitespace-nowrap"
+              onClick={clearFilters}
+            >
+              Limpiar
+            </button>
+          )}
         </div>
 
-        {/* Fila 2: Filtro de fechas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <label className="text-neutral-300 text-sm font-medium whitespace-nowrap">
-              Desde:
-            </label>
-            <input
-              type="date"
-              className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:flex-1"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <label className="text-neutral-300 text-sm font-medium whitespace-nowrap">
-              Hasta:
-            </label>
-            <input
-              type="date"
-              className="border border-gray-700 bg-gray-800/80 rounded-lg px-3 py-2 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 w-full sm:flex-1"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Fila 3: Filtro "siguiendo" por checkboxes */}
-        <div className="space-y-2">
-          <span className="text-neutral-300 text-sm font-medium block">Siguiendo:</span>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {seguimientoOptions.map((opt) => (
-              <label
-                key={opt}
-                className="flex items-center gap-2 p-2 bg-gray-800/80 rounded-lg border border-gray-700 hover:border-yellow-400/50 cursor-pointer transition-colors"
-              >
+        {/* Capa 2: filtros avanzados colapsables */}
+        {advancedOpen && (
+          <div className="border-t border-border px-3 pb-3 pt-3 space-y-4">
+            {/* Fechas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-muted-foreground text-xs font-medium whitespace-nowrap w-12">Desde:</label>
                 <input
-                  type="checkbox"
-                  value={opt}
-                  checked={siguiendoChecks.includes(opt)}
-                  onChange={() => handleSiguiendoChange(opt)}
-                  className="focus:ring-2 focus:ring-yellow-400/50 text-yellow-500"
+                  type="date"
+                  className="border border-input bg-background rounded-lg px-3 py-1.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/50 flex-1"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
                 />
-                <span className="text-neutral-200 text-sm select-none">{opt.replace("_", " ")}</span>
-              </label>
-            ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-muted-foreground text-xs font-medium whitespace-nowrap w-12">Hasta:</label>
+                <input
+                  type="date"
+                  className="border border-input bg-background rounded-lg px-3 py-1.5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/50 flex-1"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Siguiendo */}
+            <div>
+              <span className="text-muted-foreground text-xs font-medium block mb-2">Siguiendo:</span>
+              <div className="flex flex-wrap gap-2">
+                {seguimientoOptions.map((opt) => (
+                  <label
+                    key={opt}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                      siguiendoChecks.includes(opt)
+                        ? "border-yellow-400/40 bg-yellow-400/10 text-yellow-500 dark:text-gray-700 dark:text-yellow-300"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground hover:border-gray-400 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      value={opt}
+                      checked={siguiendoChecks.includes(opt)}
+                      onChange={() => handleSiguiendoChange(opt)}
+                      className="sr-only"
+                    />
+                    <span className="select-none">{opt.replace("_", " ")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Tipo de consulta */}
+            <div>
+              <span className="text-muted-foreground text-xs font-medium block mb-2">Tipo de consulta:</span>
+              <div className="flex flex-wrap gap-2">
+                {(["ALL", "ORIGINAL", "RECONSULTAS"] as const).map((val) => {
+                  const labels = { ALL: "Todos", ORIGINAL: "Primer ingreso", RECONSULTAS: "Reconsultas" };
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => setReconsultaFilter(val)}
+                      className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                        reconsultaFilter === val
+                          ? "border-yellow-400/40 bg-yellow-400/10 text-yellow-500 dark:text-gray-700 dark:text-yellow-300"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground hover:border-gray-400 dark:hover:border-gray-600"
+                      }`}
+                    >
+                      {labels[val]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ============== TABLA ============== */}
-      <div className="overflow-x-auto border border-gray-700/50 rounded-xl">
+      <div className="overflow-x-auto border border-border rounded-xl">
         <table className="table-fixed w-full text-left border-collapse">
-          <thead className="bg-gray-800/70">
+          <thead className="bg-muted dark:bg-gray-800/70">
             <tr>
               {columns.map((col, colIndex) => {
                 // Determinar flecha de orden ("▲" or "▼")
@@ -557,7 +642,7 @@ export default function CustomTable<T extends RowData>({
                   <th
                     key={col.field}
                     style={{ width: widths[colIndex] }}
-                    className={`relative px-4 py-2 text-sm font-semibold text-neutral-200 ${col.align === "center"
+                    className={`relative px-4 py-2 text-sm font-semibold text-foreground ${col.align === "center"
                         ? "text-center"
                         : col.align === "right"
                           ? "text-right"
@@ -592,7 +677,7 @@ export default function CustomTable<T extends RowData>({
               {actions && (
                 <th
                   style={{ width: widths[columns.length] }}
-                  className="relative px-4 py-2 text-sm font-semibold text-neutral-200 text-center sticky top-0"
+                  className="relative px-4 py-2 text-sm font-semibold text-foreground text-center sticky top-0"
                 >
                   Acciones
                   <div
@@ -607,7 +692,7 @@ export default function CustomTable<T extends RowData>({
           <tbody>
             {tabFilteredData.map((row, rowIndex) => {
               return (
-                <tr key={rowIndex} className="border-t border-gray-700/40 hover:bg-gray-800/40">
+                <tr key={rowIndex} className="border-t border-border hover:bg-muted/50">
                   {columns.map((col, colIndex) => {
                     const isEditingThis =
                       editingCell?.rowIndex === rowIndex && editingCell.field === col.field;
@@ -643,7 +728,7 @@ export default function CustomTable<T extends RowData>({
                     return (
                       <td
                         key={col.field}
-                        className={`px-4 py-2 text-sm text-neutral-200 ${col.align === "center"
+                        className={`px-4 py-2 text-sm text-foreground ${col.align === "center"
                             ? "text-center"
                             : col.align === "right"
                               ? "text-right"
@@ -890,7 +975,7 @@ export default function CustomTable<T extends RowData>({
               <tr>
                 <td
                   colSpan={columns.length + (actions ? 1 : 0)}
-                  className="px-4 py-6 text-center text-neutral-400"
+                  className="px-4 py-6 text-center text-muted-foreground"
                 >
                   No hay registros
                 </td>
@@ -903,13 +988,13 @@ export default function CustomTable<T extends RowData>({
       {/* ============== PAGINACIÓN ============== */}
       {pagination && (
         <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-          <span className="text-sm text-neutral-400">
+          <span className="text-sm text-muted-foreground">
             Página {page + 1} de {pageCount || 1} · {filteredData.length} resultados
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-400">Filas por página:</span>
+            <span className="text-sm text-muted-foreground">Filas por página:</span>
             <select
-              className="px-2 py-1 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+              className="px-2 py-1 rounded-lg bg-background border border-input text-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               value={rowsPerPage}
               onChange={handleRowsPerPageChange}
             >
@@ -924,14 +1009,14 @@ export default function CustomTable<T extends RowData>({
             <button
               onClick={handlePrevPage}
               disabled={page === 0}
-              className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+              className="px-3 py-2 rounded-lg bg-background border border-input text-foreground disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             >
               Anterior
             </button>
             <button
               onClick={handleNextPage}
               disabled={page >= pageCount - 1}
-              className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+              className="px-3 py-2 rounded-lg bg-background border border-input text-foreground disabled:opacity-50 hover:border-yellow-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             >
               Siguiente
             </button>

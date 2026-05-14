@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import CustomTable, { type Action, type Column } from "@/components/CustomTable";
-import { FileSpreadsheet, FileText, PencilIcon, PlusIcon, TargetIcon, TrashIcon, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, FileSpreadsheet, FileText, PencilIcon, PlusIcon, TrashIcon, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Client } from "@/store/clients/clients";
 import {
@@ -24,7 +24,6 @@ export default function ClientsViewer() {
     (state: RootState) => state.clients
   );
   const { showSuccess, showError } = useNotificationHelpers();
-  const [reconsultaFilter, setReconsultaFilter] = useState<"ALL" | "RECONSULTAS" | "ORIGINAL">("ALL");
 
   const columns: Column[] = [
     { field: "nombre", headerName: "Nombre", align: "left" },
@@ -263,6 +262,8 @@ export default function ClientsViewer() {
     }
   };
 
+  const [columnsOpen, setColumnsOpen] = useState(false);
+
   // Selector de columnas visibles
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     "nombre",
@@ -302,42 +303,21 @@ export default function ClientsViewer() {
     };
   }, [clients]);
 
-  const filteredClients = useMemo(() => {
-    const base = clients ?? [];
-    switch (reconsultaFilter) {
-      case "RECONSULTAS":
-        return base.filter((client) => client.isReconsulta);
-      case "ORIGINAL":
-        return base.filter((client) => !client.isReconsulta);
-      default:
-        return base;
-    }
-  }, [clients, reconsultaFilter]);
-
-  const cleanedClients = useMemo(() => filteredClients.map(cleanClientData), [filteredClients]);
-
-  const filterOptions: Array<{ value: typeof reconsultaFilter; label: string; helper: string }> = useMemo(
-    () => [
-      { value: "ALL", label: "Todos", helper: `${reconsultaStats.total} registros` },
-      { value: "RECONSULTAS", label: "Reconsultas", helper: `${reconsultaStats.reconsultas} (${reconsultaStats.ratio}%)` },
-      { value: "ORIGINAL", label: "Primer ingreso", helper: `${reconsultaStats.originales} registros únicos` },
-    ],
-    [reconsultaStats],
-  );
+  const cleanedClients = useMemo(() => (clients ?? []).map(cleanClientData), [clients]);
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 pt-12 md:p-8">
+    <div className="min-h-screen bg-background p-4 pt-12 md:p-8">
       {/* Header mejorado */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           {/* Título y descripción */}
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-yellow-400 mb-2 flex items-center gap-3">
               <Users className="h-8 w-8 md:h-10 md:w-10" />
               Gestión de Clientes
             </h1>
-            <p className="text-gray-300 text-sm md:text-base">
+            <p className="text-gray-500 dark:text-gray-300 text-sm md:text-base">
               Administra tus contactos y leads en un solo lugar
             </p>
           </div>
@@ -374,94 +354,55 @@ export default function ClientsViewer() {
       </div>
     </div>
 
-    {/* Resumen de reconsultas y filtros */}
-    <div className="mb-8 grid gap-4 lg:grid-cols-[2fr,1fr]">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 shadow-xl">
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-400 mb-1">
-              Contactos totales
-            </p>
-            <p className="text-3xl font-bold text-yellow-400">
-              {reconsultaStats.total}
-            </p>
-            <p className="text-sm text-neutral-400 mt-1">
-              Historial completo del CRM
-            </p>
-          </CardContent>
-        </Card>
+    {/* Resumen de reconsultas */}
+    <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Card className="dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-900/90 border border-yellow-400/30 shadow-xl">
+        <CardContent className="p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-neutral-400 mb-1">
+            Contactos totales
+          </p>
+          <p className="text-3xl font-bold text-yellow-500 dark:text-gray-800 dark:text-yellow-400">
+            {reconsultaStats.total}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-neutral-400 mt-1">
+            Historial completo del CRM
+          </p>
+        </CardContent>
+      </Card>
 
-        <Card className="bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-400/40 shadow-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs uppercase tracking-[0.2em] text-amber-100">
-                Reconsultas
-              </p>
-              <span className="text-sm font-semibold text-amber-100">
-                {reconsultaStats.ratio}%
-              </span>
-            </div>
-            <p className="text-3xl font-bold text-white">
-              {reconsultaStats.reconsultas}
+      <Card className="bg-gradient-to-br from-amber-500/20 to-amber-500/10 border border-amber-400/40 shadow-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-700 dark:text-amber-100">
+              Reconsultas
             </p>
-            <p className="text-xs text-amber-100/80 mt-2">
-              Clientes que regresaron en la misma línea
-            </p>
-            <div className="mt-3 h-2 rounded-full bg-amber-100/20 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-300 to-yellow-200"
-                style={{ width: `${reconsultaStats.ratio}%` }}
-              ></div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 border border-emerald-400/30 shadow-xl">
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-100 mb-1">
-              Primer ingreso
-            </p>
-            <p className="text-3xl font-bold text-white">
-              {reconsultaStats.originales}
-            </p>
-            <p className="text-xs text-emerald-100/80 mt-2">
-              Contactos únicos en la base
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 shadow-xl">
-        <CardContent className="p-4 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-yellow-400/20 text-yellow-300">
-              <TargetIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-100">
-                Filtrar por tipo de consulta
-              </p>
-              <p className="text-xs text-neutral-400">
-                Visualiza rápidamente clientes repetidos o nuevos
-              </p>
-            </div>
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-100">
+              {reconsultaStats.ratio}%
+            </span>
           </div>
-          <div className="grid gap-2">
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setReconsultaFilter(option.value)}
-                className={`w-full rounded-lg border px-4 py-2 text-left transition-colors duration-200 ${
-                  reconsultaFilter === option.value
-                    ? "border-yellow-400/70 bg-yellow-400/10 text-yellow-300"
-                    : "border-gray-600/60 bg-gray-800/40 text-neutral-200 hover:border-yellow-400/40"
-                }`}
-              >
-                <span className="block text-sm font-semibold">{option.label}</span>
-                <span className="block text-xs text-neutral-400">{option.helper}</span>
-              </button>
-            ))}
+          <p className="text-3xl font-bold text-amber-800 dark:text-white">
+            {reconsultaStats.reconsultas}
+          </p>
+          <div className="mt-3 h-1.5 rounded-full bg-amber-200 dark:bg-amber-100/20 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 dark:from-amber-300 dark:to-yellow-200"
+              style={{ width: `${reconsultaStats.ratio}%` }}
+            />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 border border-emerald-400/30 shadow-xl">
+        <CardContent className="p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-100 mb-1">
+            Primer ingreso
+          </p>
+          <p className="text-3xl font-bold text-emerald-800 dark:text-white">
+            {reconsultaStats.originales}
+          </p>
+          <p className="text-xs text-emerald-700/80 dark:text-emerald-100/80 mt-2">
+            Contactos únicos en la base
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -480,60 +421,82 @@ export default function ClientsViewer() {
 
         {/* Tabla con diseño mejorado */}
         <>
-          <div className="relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-yellow-400/10 shadow-2xl p-4 mb-6">
-            {loading && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-gray-900/70">
-                <div className="text-center">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-yellow-400 border-t-transparent mb-4"></div>
-                  <p className="text-gray-300 text-lg">Guardando cambios...</p>
-                </div>
+          <div className="relative bg-card rounded-lg border border-border shadow-xl p-4 mb-6 overflow-hidden">
+            {/* Barra de progreso sutil para operaciones de guardado */}
+            {loading && (clients?.length ?? 0) > 0 && (
+              <div className="absolute top-0 left-0 right-0 h-0.5">
+                <div className="h-full bg-yellow-400 animate-pulse" style={{ width: "100%" }} />
               </div>
             )}
-            <CustomTable<Client>
-              columns={filteredColumns}
-              data={cleanedClients}
-              actions={actions}
-              onActionClick={handleActionClick}
-              onSaveCell={handleCellSave}
-              pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
-            />
+
+            {/* Skeleton para carga inicial */}
+            {loading && (clients?.length ?? 0) === 0 ? (
+              <div className="space-y-2 py-2">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse mb-4" />
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-10 bg-gray-100 dark:bg-gray-800/60 rounded animate-pulse"
+                    style={{ opacity: 1 - i * 0.08 }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <CustomTable<Client>
+                columns={filteredColumns}
+                data={cleanedClients}
+                actions={actions}
+                onActionClick={handleActionClick}
+                onSaveCell={handleCellSave}
+                pagination={{ rowsPerPage: 7, rowsPerPageOptions: [7, 10, 25] }}
+              />
+            )}
           </div>
 
-          {/* Selector de Columnas */}
-          <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border border-yellow-400/30 backdrop-blur-sm shadow-xl">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="bg-yellow-400/10 p-2 rounded-lg">
-                  <svg className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Selector de Columnas colapsable */}
+          <div className="bg-card border border-border shadow-xl rounded-xl overflow-hidden">
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700/30 transition-colors"
+              onClick={() => setColumnsOpen((o) => !o)}
+            >
+              <div className="flex items-center gap-2">
+                <div className="bg-yellow-400/10 p-1.5 rounded-lg">
+                  <svg className="h-4 w-4 text-gray-800 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h3 className="text-yellow-400 font-semibold">Columnas Visibles</h3>
-                <span className="text-gray-400 text-sm ml-auto">
-                  {visibleColumns.length} de {columns.length}
-                </span>
+                <span className="text-gray-800 dark:text-yellow-400 font-semibold text-sm">Columnas Visibles</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">{visibleColumns.length} de {columns.length}</span>
               </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {columns.map((col) => (
-                  <label
-                    key={col.field}
-                    className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors duration-200 border border-gray-700/30 hover:border-yellow-400/30"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.includes(col.field)}
-                      onChange={() => toggleColumn(col.field)}
-                      className="w-4 h-4 text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2 cursor-pointer"
-                    />
-                    <span className="text-gray-300 text-sm select-none">
-                      {col.headerName}
-                    </span>
-                  </label>
-                ))}
+              {columnsOpen ? (
+                <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              )}
+            </button>
+            {columnsOpen && (
+              <div className="px-4 pb-4 pt-1 border-t border-yellow-400/10">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-3">
+                  {columns.map((col) => (
+                    <label
+                      key={col.field}
+                      className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors duration-200 border border-gray-700/30 hover:border-yellow-400/30"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns.includes(col.field)}
+                        onChange={() => toggleColumn(col.field)}
+                        className="w-4 h-4 text-gray-800 dark:text-yellow-400 bg-gray-700 border-gray-600 rounded focus:ring-yellow-400 focus:ring-2 cursor-pointer"
+                      />
+                      <span className="text-gray-600 dark:text-gray-300 text-sm select-none">
+                        {col.headerName}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </>
 
       {/* Modal sin cambios */}

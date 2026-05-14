@@ -40,7 +40,7 @@ interface StatusPoint { status: string; total: number; percentage: number; }
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-900/95 border border-gold-400/30 rounded-lg p-3 shadow-2xl text-white">
+      <div className="bg-popover text-popover-foreground border border-border rounded-lg p-3 shadow-2xl">
         <p className="font-medium text-sm mb-1">{label}</p>
         {payload.map((entry: any, idx: number) => (
           <p key={idx} className="text-sm">
@@ -449,14 +449,14 @@ export default function ClientsDashboard() {
   }
 
   return (
-    <div className="mt-10 min-h-screen p-4 md:p-8 space-y-8">
+    <div className="mt-10 min-h-screen bg-background p-4 md:p-8 space-y-8">
       {/* Header + total contactos */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-yellow-400 mb-1">
             CRM  Visin General
           </h1>
-          <p className="text-neutral-300 text-lg">
+          <p className="text-gray-600 dark:text-neutral-300 text-lg">
             Contactos, canales de adquisicion y productos consultados
           </p>
           <div className="mt-4 flex flex-wrap gap-3 items-center">
@@ -465,7 +465,7 @@ export default function ClientsDashboard() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                className="rounded-md border border-yellow-500/40 bg-background px-3 py-1 text-sm text-foreground focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
               >
                 {availableYears.map((year) => (
                   <option key={`selected-${year}`} value={year}>
@@ -479,7 +479,7 @@ export default function ClientsDashboard() {
               <select
                 value={comparisonMode}
                 onChange={(e) => setComparisonMode(e.target.value as "none" | "compare")}
-                className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
+                className="rounded-md border border-purple-500/40 bg-background px-3 py-1 text-sm text-foreground focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
               >
                 <option value="none">Solo año seleccionado</option>
                 <option value="compare">Comparar con otro año</option>
@@ -491,7 +491,7 @@ export default function ClientsDashboard() {
                 <select
                   value={compareYear}
                   onChange={(e) => setCompareYear(Number(e.target.value))}
-                  className="rounded-md border border-purple-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
+                  className="rounded-md border border-purple-500/40 bg-background px-3 py-1 text-sm text-foreground focus:border-purple-300 focus:outline-none focus:ring-1 focus:ring-purple-300"
                 >
                   {availableYears.filter((year) => year !== selectedYear).map((year) => (
                     <option key={`compare-${year}`} value={year}>
@@ -504,9 +504,9 @@ export default function ClientsDashboard() {
           </div>
         </div>
         <div className="flex flex-wrap gap-4 items-stretch">
-          <Card className="w-full sm:w-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+          <Card className="w-full sm:w-auto dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
             <CardContent className="p-4 flex flex-col items-start sm:items-center">
-              <span className="text-2xl font-bold text-yellow-400">
+              <span className="text-2xl font-bold text-gray-800 dark:text-yellow-400">
                 {totalContacts}
               </span>
               <span className="text-sm text-neutral-400">Contactos totales</span>
@@ -525,7 +525,7 @@ export default function ClientsDashboard() {
               <span className="text-xs uppercase tracking-[0.2em] text-amber-100">
                 Reconsultas
               </span>
-              <span className="text-2xl font-bold text-white">
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">
                 {totalReconsultas}
               </span>
               <span className="text-sm text-amber-100/80">
@@ -546,13 +546,13 @@ export default function ClientsDashboard() {
         {(comparisonEnabled ? normalizedComparisonChannelData : (byChannel as ChannelData[])).map((c: any) => (
           <Card
             key={c.channel ?? c?.channel}
-            className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-gold-400/10 backdrop-blur-sm"
+            className="dark:bg-gradient-to-br dark:from-gray-900/80 dark:to-gray-800/80 border border-gold-400/10 dark:backdrop-blur-sm"
           >
             <CardContent className="p-4 flex flex-col items-start">
-              <span className="text-lg font-semibold text-neutral-200">
+              <span className="text-lg font-semibold text-gray-700 dark:text-neutral-200">
                 {String(c.channel).charAt(0).toUpperCase() + String(c.channel).slice(1).toLowerCase()}
               </span>
-              <span className="mt-1 text-2xl font-bold text-yellow-400">
+              <span className="mt-1 text-2xl font-bold text-gray-800 dark:text-yellow-400">
                 {comparisonEnabled ? c.selectedTotal : c.total}
               </span>
               <span className="text-xs text-neutral-400">Contactos</span>
@@ -569,9 +569,9 @@ export default function ClientsDashboard() {
       {/* Las cuatro graficas principales */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* 1) Adquisicion por Canal */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
               Adquisicion por Canal
             </CardTitle>
           </CardHeader>
@@ -581,22 +581,22 @@ export default function ClientsDashboard() {
                 {normalizedComparisonChannelData.map((item) => (
                   <div
                     key={item.channel}
-                    className="rounded-lg border border-gray-600/40 bg-gray-900/60 px-3 py-2"
+                    className="rounded-lg border border-border bg-muted/50 dark:bg-gray-900/60 px-3 py-2"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-neutral-100">{item.channel}</span>
+                      <span className="text-sm font-semibold text-gray-800 dark:text-neutral-100">{item.channel}</span>
                       <span className="text-xs text-neutral-400">
                         {selectedYear}: {item.selectedTotal} | {compareYear}: {item.compareTotal} | Δ {formatDelta(item.delta)}
                       </span>
                     </div>
                     <div className="mt-2 space-y-1.5">
-                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                      <div className="h-2 rounded bg-gray-200 dark:bg-gray-700/70 overflow-hidden">
                         <div
                           className="h-full bg-yellow-400"
                           style={{ width: `${(toSafeNumber(item.selectedTotal) / maxChannelComparisonValue) * 100}%` }}
                         />
                       </div>
-                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                      <div className="h-2 rounded bg-gray-200 dark:bg-gray-700/70 overflow-hidden">
                         <div
                           className="h-full bg-cyan-400"
                           style={{ width: `${(toSafeNumber(item.compareTotal) / maxChannelComparisonValue) * 100}%` }}
@@ -639,9 +639,9 @@ export default function ClientsDashboard() {
         </Card>
 
         {/* 2) Evolucion de Consultas */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
               {comparisonEnabled
                 ? `Evolucion de Consultas (${selectedYear} vs ${compareYear})`
                 : `Evolucion de Consultas (${selectedYear})`}
@@ -706,9 +706,9 @@ export default function ClientsDashboard() {
         </Card>
 
         {/* 3) Productos mas Consultados */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
               {comparisonEnabled
                 ? `Productos mas Consultados (${selectedYear} vs ${compareYear})`
                 : "Productos mas Consultados"}
@@ -720,10 +720,10 @@ export default function ClientsDashboard() {
                 {normalizedComparisonProductData.map((item) => (
                   <div
                     key={item.product}
-                    className="rounded-lg border border-gray-600/40 bg-gray-900/60 px-3 py-2"
+                    className="rounded-lg border border-border bg-muted/50 dark:bg-gray-900/60 px-3 py-2"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-neutral-100 truncate max-w-[60%]">
+                      <span className="text-sm font-semibold text-gray-800 dark:text-neutral-100 truncate max-w-[60%]">
                         {item.product}
                       </span>
                       <span className="text-xs text-neutral-400">
@@ -731,13 +731,13 @@ export default function ClientsDashboard() {
                       </span>
                     </div>
                     <div className="mt-2 space-y-1.5">
-                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                      <div className="h-2 rounded bg-gray-200 dark:bg-gray-700/70 overflow-hidden">
                         <div
                           className="h-full bg-yellow-400"
                           style={{ width: `${(toSafeNumber(item.selectedTotal) / maxProductComparisonValue) * 100}%` }}
                         />
                       </div>
-                      <div className="h-2 rounded bg-gray-700/70 overflow-hidden">
+                      <div className="h-2 rounded bg-gray-200 dark:bg-gray-700/70 overflow-hidden">
                         <div
                           className="h-full bg-cyan-400"
                           style={{ width: `${(toSafeNumber(item.compareTotal) / maxProductComparisonValue) * 100}%` }}
@@ -784,9 +784,9 @@ export default function ClientsDashboard() {
         </Card>
 
         {/* 4) Estado de Compras */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-gold-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
               {comparisonEnabled
                 ? `Estado de Compras (${selectedYear} vs ${compareYear})`
                 : "Estado de Compras"}
@@ -830,9 +830,9 @@ export default function ClientsDashboard() {
 
       {locationSummary && (
         <div className="grid grid-cols-1 gap-6">
-          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-sm">
+          <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-sm">
             <CardHeader className="border-b border-gold-400/20 pb-4">
-              <CardTitle className="text-xl font-bold text-yellow-400">
+              <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
                 Panorama de Ubicaciones
               </CardTitle>
             </CardHeader>
@@ -842,7 +842,7 @@ export default function ClientsDashboard() {
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-100">
                     Cobertura de ubicación
                   </p>
-                  <p className="text-2xl font-bold text-white">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {locationCoverage.percent}%
                   </p>
                   <p className="text-xs text-emerald-100/80">
@@ -854,9 +854,9 @@ export default function ClientsDashboard() {
                     </p>
                   )}
                 </div>
-                <div className="rounded-lg border border-gray-600/30 bg-gray-800/40 p-3">
+                <div className="rounded-lg border border-border bg-muted/40 dark:bg-gray-800/40 p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Top provincias</p>
-                  <div className="mt-2 space-y-1 text-sm text-neutral-200">
+                  <div className="mt-2 space-y-1 text-sm text-gray-700 dark:text-neutral-200">
                     {locationSummary.topProvinces.slice(0, 6).map((item) => (
                       <div key={item.name} className="flex justify-between gap-2">
                         <span>{item.name}</span>
@@ -876,9 +876,9 @@ export default function ClientsDashboard() {
                     )}
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-600/30 bg-gray-800/40 p-3">
+                <div className="rounded-lg border border-border bg-muted/40 dark:bg-gray-800/40 p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Top localidades</p>
-                  <div className="mt-2 space-y-1 text-sm text-neutral-200">
+                  <div className="mt-2 space-y-1 text-sm text-gray-700 dark:text-neutral-200">
                     {locationSummary.topLocalities.slice(0, 6).map((item) => (
                       <div key={`${item.name}-${item.province}`} className="flex justify-between gap-2">
                         <span>{item.name}</span>
@@ -904,9 +904,9 @@ export default function ClientsDashboard() {
         </div>
       )}
 
-      <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-gold-400/20 backdrop-blur-md">
+      <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-gold-400/20 dark:backdrop-blur-md">
         <CardHeader className="border-b border-gold-400/20 pb-4">
-          <CardTitle className="text-xl font-bold text-yellow-400 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/15 text-yellow-300 ring-2 ring-yellow-500/40">
                 SMS
@@ -931,11 +931,11 @@ export default function ClientsDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-3 border-b border-gold-400/10 bg-gray-900/60 px-6 py-4 md:flex-row md:items-center md:justify-between">
-            <p className="text-xs text-neutral-300 md:max-w-2xl">
+          <div className="flex flex-col gap-3 border-b border-gold-400/10 bg-muted/60 dark:bg-gray-900/60 px-6 py-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs text-gray-600 dark:text-neutral-300 md:max-w-2xl">
               El envio automatico esta pausado. Cuando un estado active un seguimiento, se envia un correo a la persona responsable y el evento queda disponible en esta lista.
             </p>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-300">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-neutral-300">
               <div className="flex items-center gap-2">
                 <span className="font-semibold uppercase tracking-widest text-neutral-400">
                   Responsable
@@ -943,7 +943,7 @@ export default function ClientsDashboard() {
                 <select
                   value={assigneeFilter}
                   onChange={handleAssigneeChange}
-                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                  className="rounded-md border border-yellow-500/40 bg-background px-3 py-1 text-sm text-foreground focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
                 >
                   {assigneeOptions.map((option) => (
                     <option key={option} value={option}>
@@ -959,7 +959,7 @@ export default function ClientsDashboard() {
                 <select
                   value={statusFilter}
                   onChange={handleStatusChange}
-                  className="rounded-md border border-yellow-500/40 bg-gray-900/70 px-3 py-1 text-sm text-neutral-100 focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
+                  className="rounded-md border border-yellow-500/40 bg-background px-3 py-1 text-sm text-foreground focus:border-yellow-300 focus:outline-none focus:ring-1 focus:ring-yellow-300"
                 >
                   {statusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1031,7 +1031,7 @@ export default function ClientsDashboard() {
                         <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
                           Cliente
                         </p>
-                        <p className="text-sm text-neutral-100 break-words">
+                        <p className="text-sm text-gray-800 dark:text-neutral-100 break-words">
                           {fullName}
                         </p>
                         {phoneNumber ? (
@@ -1042,7 +1042,7 @@ export default function ClientsDashboard() {
                         <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
                           Producto
                         </p>
-                        <p className="text-sm text-neutral-200 break-words">
+                        <p className="text-sm text-gray-700 dark:text-neutral-200 break-words">
                           {event.product ?? "Sin especificar"}
                         </p>
                       </div>
@@ -1052,7 +1052,7 @@ export default function ClientsDashboard() {
                       <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2">
                         Mensaje sugerido
                       </p>
-                      <p className="text-sm text-neutral-200 whitespace-pre-line leading-relaxed">
+                      <p className="text-sm text-gray-700 dark:text-neutral-200 whitespace-pre-line leading-relaxed">
                         {event.message}
                       </p>
                     </div>

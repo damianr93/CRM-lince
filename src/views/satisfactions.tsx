@@ -32,7 +32,7 @@ const COLORS = [
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-900/95 border border-yellow-400/30 rounded-lg p-3 shadow-2xl text-white">
+      <div className="bg-popover text-popover-foreground border border-border rounded-lg p-3 shadow-2xl">
         {label && <p className="font-medium text-sm mb-1">{label}</p>}
         {payload.map((entry: any, idx: number) => (
           <p key={idx} className="text-sm">
@@ -251,22 +251,22 @@ export default function SatisfactionDashboard() {
   }
 
   return (
-    <div className="mt-10 min-h-screen p-4 md:p-8 space-y-8">
+    <div className="mt-10 min-h-screen bg-background p-4 md:p-8 space-y-8">
       {/* Header + totales (¡sin el cuadro de Recomendación aquí!) */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-1">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-yellow-400 mb-1">
             Satisfacción · Visión General
           </h1>
-          <p className="text-neutral-300 text-lg">
+          <p className="text-gray-600 dark:text-neutral-300 text-lg">
             Encuestas, productos consultados y percepción del servicio
           </p>
         </div>
 
         <div className="flex flex-wrap gap-4 items-stretch">
-          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+          <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
             <CardContent className="p-4 flex flex-col items-start sm:items-center">
-              <span className="text-2xl font-bold text-yellow-400">
+              <span className="text-2xl font-bold text-gray-800 dark:text-yellow-400">
                 {totalEncuestas}
               </span>
               <span className="text-sm text-neutral-400">Encuestas</span>
@@ -276,9 +276,9 @@ export default function SatisfactionDashboard() {
       </div>
 
       {/* --- 1er VH: Tabla --- */}
-      <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+      <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
         <CardHeader className="border-b border-yellow-400/20 pb-4">
-          <CardTitle className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+          <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400 flex items-center gap-2">
             📋 Respuestas (tabla)
           </CardTitle>
         </CardHeader>
@@ -292,15 +292,15 @@ export default function SatisfactionDashboard() {
                 setPage(1);
               }}
               placeholder="Buscar por producto, teléfono, recomendación o comentarios…"
-              className="w-full md:w-1/2 px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+              className="w-full md:w-1/2 px-3 py-2 rounded-lg bg-background border border-input text-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
             />
 
             <div className="flex items-center gap-2">
-              <label className="text-sm text-neutral-300">Ordenar por:</label>
+              <label className="text-sm text-gray-600 dark:text-neutral-300">Ordenar por:</label>
               <select
                 value={sortKey}
                 onChange={(e) => setSort(e.target.value as any)}
-                className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200"
+                className="px-3 py-2 rounded-lg bg-background border border-input text-foreground"
               >
                 <option value="_createdAt">Fecha creación</option>
                 <option value="_updatedAt">Fecha actualización</option>
@@ -320,7 +320,7 @@ export default function SatisfactionDashboard() {
                 onClick={() =>
                   setSortDir((d) => (d === "asc" ? "desc" : "asc"))
                 }
-                className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 hover:border-yellow-400/50"
+                className="px-3 py-2 rounded-lg bg-background border border-input text-foreground hover:border-yellow-400/50"
                 title="Cambiar dirección"
               >
                 {sortDir === "asc" ? "Asc" : "Desc"}
@@ -330,8 +330,8 @@ export default function SatisfactionDashboard() {
 
           {/* Tabla */}
           <div className="overflow-x-auto rounded-xl border border-gray-700/50">
-            <table className="min-w-full text-sm text-neutral-200">
-              <thead className="bg-gray-800/70">
+            <table className="min-w-full text-sm text-foreground">
+              <thead className="bg-muted dark:bg-gray-800/70">
                 <tr className="text-left">
                   <th className="px-3 py-2">Nombre / Razón Social</th>
                   {/* 👈 nueva columna */}
@@ -353,7 +353,7 @@ export default function SatisfactionDashboard() {
                 {pageData.map((r) => (
                   <tr
                     key={(r._id || r.id) as string}
-                    className="border-t border-gray-700/40 hover:bg-gray-800/40"
+                    className="border-t border-border hover:bg-muted/50"
                   >
                     <td className="px-3 py-2">{r.name || "-"}</td>
                     {/* 👈 nuevo dato */}
@@ -372,7 +372,7 @@ export default function SatisfactionDashboard() {
                           r.recomendacion === "NO"
                             ? "text-red-400"
                             : r.recomendacion === "MAYBE"
-                            ? "text-yellow-400"
+                            ? "text-gray-800 dark:text-yellow-400"
                             : "text-green-400"
                         }
                       >
@@ -384,7 +384,7 @@ export default function SatisfactionDashboard() {
                     <td className="px-3 py-2">
                       {r.comentarios && r.comentarios.trim() !== "" ? (
                         <div
-                          className="max-w-xs truncate text-neutral-100 cursor-help"
+                          className="max-w-xs truncate text-gray-800 dark:text-neutral-100 cursor-help"
                           title={r.comentarios}
                         >
                           {r.comentarios}
@@ -423,14 +423,14 @@ export default function SatisfactionDashboard() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50"
+                className="px-3 py-2 rounded-lg bg-background border border-input text-foreground disabled:opacity-50"
               >
                 Anterior
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-neutral-200 disabled:opacity-50"
+                className="px-3 py-2 rounded-lg bg-background border border-input text-foreground disabled:opacity-50"
               >
                 Siguiente
               </button>
@@ -442,9 +442,9 @@ export default function SatisfactionDashboard() {
       {/* --- 2do VH: Gráficas + KPIs + Recomendación --- */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Barras: promedio de calidad por producto */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-yellow-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
               🏆 Promedio de Calidad por Producto
             </CardTitle>
           </CardHeader>
@@ -481,9 +481,9 @@ export default function SatisfactionDashboard() {
         </Card>
 
         {/* Torta: respuestas por producto */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-yellow-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
               🥧 Respuestas por Producto
             </CardTitle>
           </CardHeader>
@@ -512,9 +512,9 @@ export default function SatisfactionDashboard() {
         </Card>
 
         {/* NUEVO: Recomendación (mini pie + % SI) */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-yellow-400/20 pb-3">
-            <CardTitle className="text-xl font-bold text-yellow-400">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
               ✅ Recomendación
             </CardTitle>
           </CardHeader>
@@ -544,7 +544,7 @@ export default function SatisfactionDashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="min-w-28 rounded-xl p-10 bg-gray-800/60 border border-gray-700/40 text-center">
+            <div className="min-w-28 rounded-xl p-10 bg-muted/40 dark:bg-gray-800/60 border border-border text-center">
               <div className="text-xs text-neutral-400 mb-1">
                 SI Recomiendan
               </div>
@@ -559,9 +559,9 @@ export default function SatisfactionDashboard() {
         </Card>
 
         {/* KPIs: % de indicadores */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-yellow-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
               📊 Indicadores Normalizados
             </CardTitle>
           </CardHeader>
@@ -570,10 +570,10 @@ export default function SatisfactionDashboard() {
               {kpis.map((k) => (
                 <div
                   key={k.name}
-                  className="rounded-xl p-4 bg-gray-800/60 border border-gray-700/40"
+                  className="rounded-xl p-4 bg-muted/40 dark:bg-gray-800/60 border border-border"
                 >
                   <div className="text-sm text-neutral-400">{k.name}</div>
-                  <div className="text-3xl font-bold text-yellow-400">
+                  <div className="text-3xl font-bold text-gray-800 dark:text-yellow-400">
                     {k.value}%
                   </div>
                 </div>
@@ -583,16 +583,16 @@ export default function SatisfactionDashboard() {
         </Card>
 
         {/* Alertas & Inconvenientes */}
-        <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border border-yellow-400/20 backdrop-blur-sm">
+        <Card className="dark:bg-gradient-to-br dark:from-gray-900/90 dark:to-gray-800/90 border border-yellow-400/20 dark:backdrop-blur-sm">
           <CardHeader className="border-b border-yellow-400/20 pb-4">
-            <CardTitle className="text-xl font-bold text-yellow-400">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-yellow-400">
               🚩 Alertas & Inconvenientes
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="rounded-xl p-4 bg-gray-800/60 border border-gray-700/40">
-                <div className="text-sm text-neutral-300 mb-3">
+              <div className="rounded-xl p-4 bg-muted/40 dark:bg-gray-800/60 border border-border">
+                <div className="text-sm text-gray-600 dark:text-neutral-300 mb-3">
                   Distribución: Solución de inconvenientes
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
@@ -623,7 +623,7 @@ export default function SatisfactionDashboard() {
               </div>
 
               {/* Placeholder para otra métrica si la necesitás */}
-              {/* <div className="rounded-xl p-4 bg-gray-800/60 border border-gray-700/40 flex items-center justify-center text-neutral-400">
+              {/* <div className="rounded-xl p-4 bg-muted/40 dark:bg-gray-800/60 border border-border flex items-center justify-center text-neutral-400">
                 Agregá aquí otra tarjeta/KPI si querés (p. ej., tendencia
                 mensual).
               </div> */}
