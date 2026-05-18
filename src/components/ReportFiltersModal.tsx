@@ -9,6 +9,9 @@ export type ReportFilters = {
   zonas?: string;
 };
 
+const fieldClass =
+  "border border-input bg-background rounded px-3 py-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50";
+
 interface ReportFiltersModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,17 +29,17 @@ export const ReportFiltersModal: React.FC<ReportFiltersModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] flex flex-col relative">
+      <div className="bg-card text-card-foreground rounded-lg w-full max-w-lg max-h-[90vh] flex flex-col relative">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none z-10"
+          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground focus:outline-none z-10"
         >
           <XIcon className="h-5 w-5" />
         </button>
 
         <div className="p-6 pb-4">
-          <h3 className="text-xl font-semibold text-gray-800">Emitir informe PDF</h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <h3 className="text-xl font-semibold text-card-foreground">Emitir informe PDF</h3>
+          <p className="text-sm text-muted-foreground mt-1">
             Filtrá por fechas, provincias, países o zonas. Si dejás vacío, se incluye todo.
           </p>
         </div>
@@ -45,65 +48,65 @@ export const ReportFiltersModal: React.FC<ReportFiltersModalProps> = ({
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-gray-700 text-sm font-medium">Desde</label>
+                <label className="text-muted-foreground text-sm font-medium">Desde</label>
                 <input
                   type="date"
                   value={filters.startDate ?? ""}
                   onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className={fieldClass}
                 />
               </div>
               <div>
-                <label className="text-gray-700 text-sm font-medium">Hasta</label>
+                <label className="text-muted-foreground text-sm font-medium">Hasta</label>
                 <input
                   type="date"
                   value={filters.endDate ?? ""}
                   onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className={fieldClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-gray-700 text-sm font-medium">Provincias (separadas por coma)</label>
+              <label className="text-muted-foreground text-sm font-medium">Provincias (separadas por coma)</label>
               <input
                 type="text"
                 placeholder="Ej: Córdoba, Santa Fe"
                 value={filters.provincias ?? ""}
                 onChange={(e) => setFilters((prev) => ({ ...prev, provincias: e.target.value }))}
-                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className={fieldClass}
               />
             </div>
 
             <div>
-              <label className="text-gray-700 text-sm font-medium">Países (separados por coma)</label>
+              <label className="text-muted-foreground text-sm font-medium">Países (separados por coma)</label>
               <input
                 type="text"
                 placeholder="Ej: Argentina, Uruguay"
                 value={filters.paises ?? ""}
                 onChange={(e) => setFilters((prev) => ({ ...prev, paises: e.target.value }))}
-                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className={fieldClass}
               />
             </div>
 
             <div>
-              <label className="text-gray-700 text-sm font-medium">Zonas (separadas por coma)</label>
+              <label className="text-muted-foreground text-sm font-medium">Zonas (separadas por coma)</label>
               <input
                 type="text"
                 placeholder="Ej: Gran Córdoba"
                 value={filters.zonas ?? ""}
                 onChange={(e) => setFilters((prev) => ({ ...prev, zonas: e.target.value }))}
-                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className={fieldClass}
               />
             </div>
           </div>
         </div>
 
-        <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-2">
+        <div className="border-t border-border bg-muted px-6 py-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="px-4 py-2 border border-input rounded text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
           >
             Cancelar
           </button>

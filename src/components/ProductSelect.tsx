@@ -142,7 +142,7 @@ export default function ProductSelect({
     return (
         <div
             ref={containerRef}
-            className={`relative w-full bg-white rounded shadow-sm ${containerClassName}`}
+            className={`relative w-full bg-background rounded shadow-sm ${containerClassName}`}
         >
             <input
                 value={inputValue}
@@ -154,12 +154,12 @@ export default function ProductSelect({
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 autoFocus={autoFocus}
-                className={`border border-gray-400 rounded px-2 py-1 text-sm w-full pr-12 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${className}`}
+                className={`border border-input rounded px-3 py-2 text-sm w-full pr-12 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50 ${className}`}
             />
             {inputValue && (
                 <button
                     type="button"
-                    className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                    className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                         setInputValue("");
@@ -174,7 +174,7 @@ export default function ProductSelect({
             {open && createPortal(
                 <div 
                     id="product-select-dropdown"
-                    className="bg-white shadow-lg rounded-md border border-gray-200 max-h-56 overflow-y-auto"
+                    className="bg-popover text-popover-foreground shadow-lg rounded-md border border-border max-h-56 overflow-y-auto"
                     style={{
                         position: 'absolute',
                         zIndex: 9999,
@@ -190,15 +190,15 @@ export default function ProductSelect({
                                 type="button"
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => handleOptionSelect(option)}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-yellow-100 ${
-                                    option === value ? "bg-yellow-50" : ""
+                                className={`w-full text-left px-3 py-2 text-sm text-popover-foreground hover:bg-accent ${
+                                    option === value ? "bg-accent/80" : ""
                                 }`}
                             >
                                 {option}
                             </button>
                         ))
                     ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500">
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
                             Sin coincidencias
                         </div>
                     )}

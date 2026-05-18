@@ -4,6 +4,9 @@ import ProductSelect from "@/components/ProductSelect";
 import { LocationSearch, type LocationOption } from "@/components/LocationSearch";
 import type { Client } from "@/store/clients/clients";
 
+const fieldClass =
+    "border border-input bg-background rounded px-3 py-2 w-full text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-yellow-400/50";
+
 interface ClientFormModalProps {
     isOpen: boolean;
     isEditing: boolean;
@@ -49,24 +52,24 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] flex flex-col relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-card text-card-foreground rounded-lg w-full max-w-lg max-h-[90vh] flex flex-col relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none z-10"
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-foreground focus:outline-none z-10"
                 >
                     <XIcon className="h-5 w-5" />
                 </button>
 
                 <div className="p-6 pb-4">
-                    <h3 className="text-xl font-semibold text-gray-800">
+                    <h3 className="text-xl font-semibold text-card-foreground">
                         {isEditing ? "Editar Cliente" : "Nuevo Cliente"}
                     </h3>
                 </div>
 
                 {currentClient.isReconsulta && (
                     <div className="px-6 pb-2">
-                        <div className="rounded-lg border border-amber-400/40 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+                        <div className="rounded-lg border border-amber-400/40 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-500/30">
                             Este registro fue marcado como reconsulta automáticamente.
                         </div>
                     </div>
@@ -74,14 +77,13 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
                 <div className="flex-1 overflow-y-auto px-6">
                     <form onSubmit={onSubmit} className="space-y-4 pb-4">
-                        {/* Nombre y Apellido */}
                         <div className="grid grid-cols-2 gap-4">
                             <input
                                 type="text"
                                 placeholder="Nombre"
                                 value={currentClient.nombre}
                                 onChange={(e) => onChange("nombre", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                                 required
                             />
                             <input
@@ -89,17 +91,16 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                                 placeholder="Apellido"
                                 value={currentClient.apellido}
                                 onChange={(e) => onChange("apellido", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             />
                         </div>
 
-                        {/* Siguiendo */}
                         <div className="grid grid-cols-1 gap-4">
-                            <label className="text-gray-700 font-medium">Siguiendo</label>
+                            <label className="text-muted-foreground font-medium">Siguiendo</label>
                             <select
                                 value={currentClient.siguiendo}
                                 onChange={(e) => onChange("siguiendo", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                                 required
                             >
                                 {siguiendoOptions.map((opt) => (
@@ -110,65 +111,61 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             </select>
                         </div>
 
-                        {/* Teléfono y Correo */}
                         <div className="grid grid-cols-2 gap-4">
                             <input
                                 type="text"
                                 placeholder="Teléfono"
                                 value={currentClient.telefono}
                                 onChange={(e) => onChange("telefono", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             />
                             <input
                                 type="email"
                                 placeholder="Correo"
                                 value={currentClient.correo}
                                 onChange={(e) => onChange("correo", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             />
                         </div>
 
-                        {/* Cabezas y Meses */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-gray-700 font-medium block mb-2">Cabezas</label>
+                                <label className="text-muted-foreground font-medium block mb-2">Cabezas</label>
                                 <input
                                     type="text"
                                     placeholder="Cabezas"
                                     value={currentClient.cabezas}
                                     onChange={(e) => onChange("cabezas", e.target.value)}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    className={fieldClass}
                                 />
                             </div>
                             <div>
-                                <label className="text-gray-700 font-medium block mb-2">Meses</label>
+                                <label className="text-muted-foreground font-medium block mb-2">Meses</label>
                                 <input
                                     type="text"
                                     placeholder="Meses Supl."
                                     value={currentClient.mesesSuplemento}
                                     onChange={(e) => onChange("mesesSuplemento", e.target.value)}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    className={fieldClass}
                                 />
                             </div>
                         </div>
 
-                        {/* Producto y Ubicacion */}
                         <div className="grid grid-cols-1 gap-4">
                             <ProductSelect
                                 value={currentClient.producto ?? ""}
                                 onChange={(selected) => onChange("producto", selected)}
                                 placeholder="Seleccionar producto"
-                                className="border-gray-300"
                             />
                             <div>
-                                <label className="text-gray-700 font-medium block mb-2">Ubicación</label>
+                                <label className="text-muted-foreground font-medium block mb-2">Ubicación</label>
                                 <LocationSearch
                                     value={currentClient.ubicacion?.displayName ?? ""}
                                     onSelect={handleLocationSelect}
                                     onClear={handleLocationClear}
                                 />
                                 {currentClient.ubicacion?.displayName && (
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-muted-foreground mt-2">
                                         Seleccionado: {currentClient.ubicacion.displayName}
                                     </p>
                                 )}
@@ -179,24 +176,23 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                                     placeholder="Provincia"
                                     value={currentClient.provincia ?? ""}
                                     onChange={(e) => onChange("provincia", e.target.value)}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    className={fieldClass}
                                 />
                                 <input
                                     type="text"
                                     placeholder="Localidad"
                                     value={currentClient.localidad ?? ""}
                                     onChange={(e) => onChange("localidad", e.target.value)}
-                                    className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    className={fieldClass}
                                 />
                             </div>
                         </div>
 
-                        {/* Selects: Actividad, Medio Adquisición, Estado */}
                         <div className="grid grid-cols-3 gap-4">
                             <select
                                 value={currentClient.actividad}
                                 onChange={(e) => onChange("actividad", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             >
                                 <option value="CRIA">CRIA</option>
                                 <option value="RECRIA">RECRIA</option>
@@ -206,7 +202,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             <select
                                 value={currentClient.medioAdquisicion}
                                 onChange={(e) => onChange("medioAdquisicion", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             >
                                 <option value="INSTAGRAM">INSTAGRAM</option>
                                 <option value="WEB">WEB</option>
@@ -217,7 +213,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             <select
                                 value={currentClient.estado}
                                 onChange={(e) => onChange("estado", e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                className={fieldClass}
                             >
                                 <option value="PENDIENTE">PENDIENTE</option>
                                 <option value="NO_CONTESTO">NO CONTESTO</option>
@@ -228,29 +224,27 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             </select>
                         </div>
 
-                        {/* Observaciones */}
                         <textarea
                             placeholder="Observaciones"
                             value={currentClient.observaciones}
                             onChange={(e) => onChange("observaciones", e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 w-full h-20 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            className={`${fieldClass} h-20 resize-none`}
                         />
                     </form>
                 </div>
 
-                {/* Botones fijos en la parte inferior */}
-                <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-2">
+                <div className="border-t border-border bg-muted px-6 py-4 flex justify-end gap-2">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="px-4 py-2 border border-input rounded text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
                     >
                         Cancelar
                     </button>
                     <button
                         type="submit"
                         onClick={onSubmit}
-                        className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white rounded focus:outline-none focus:ring-2 focus:ring-yellow-600"
+                        className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-yellow-600"
                     >
                         {isEditing ? "Actualizar" : "Crear"}
                     </button>
