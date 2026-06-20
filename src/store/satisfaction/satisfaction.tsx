@@ -5,7 +5,10 @@ export type MedioConocimiento =
   | "RECOMENDACION_COLEGA"
   | "VENDEDOR"
   | "WEB"
-  | "EXPOSICIONES";
+  | "EXPOSICIONES"
+  | "REDES_SOCIALES"
+  | "RECOMENDACION_ASESOR"
+  | "OTRO";
 
 export type Recomendacion = "SI" | "NO" | "MAYBE";
 
@@ -18,22 +21,27 @@ export type Valoracion =
   | "RESOLUCION_INCONVENIENTES"
   | "SIN_VALORACION";
 
-// Interface alineada al backend que mostraste (viene _id).
 export interface Satisfaction {
   _id?: string;
-  id?: string; // por si tu toJSON setea 'id'
-  name?:string;
+  id?: string;
+  name?: string;
   phone?: string;
   product?: string;
   comoNosConocio?: MedioConocimiento;
   productoComprado?: boolean;
-  calidad?: number;          // 1..5
-  tiempoForme?: number;      // 1..5
-  atencion?: number;         // 1..5
+  calidad?: number;
+  tiempoForme?: number;
+  atencion?: number;
+  relacionPrecioCalidad?: number;
+  atencionComercial?: number;
+  atencionAdmin?: number;
+  nps?: number;
+  porQueNosCompra?: string;
   recomendacion?: Recomendacion;
   anteInconvenientes?: AnteInconvenientes;
   valoracion?: Valoracion;
   comentarios?: string;
+  source?: "FLOW" | "MANUAL";
   createdAt?: string;
   updatedAt?: string;
 }
