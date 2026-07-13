@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart2, HeartHandshake, Menu, LogOut, Moon, Sun, Users } from "lucide-react";
+import { BarChart2, HeartHandshake, Menu, LogOut, Moon, RotateCcw, Sun, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch, authStore } from "@/utils/auth";
 import { useTheme } from "@/context/ThemeContext";
@@ -9,6 +9,7 @@ const navItems = [
     { label: "Análisis", icon: <BarChart2 size={18} />, path: "/home" },
     { label: "Clientes", icon: <Users size={18} />, path: "/clientes" },
     { label: "Satisfacción", icon: <HeartHandshake size={18} />, path: "/satisfaccion" },
+    { label: "Seguimientos", icon: <RotateCcw size={18} />, path: "/seguimientos" },
 ];
 
 export default function Sidebar() {
