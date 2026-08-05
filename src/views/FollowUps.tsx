@@ -5,12 +5,13 @@ import {
   Clock3,
   RefreshCw,
   RotateCcw,
+  Send,
   Trash2,
   UserRound,
 } from "lucide-react";
 import { apiFetch } from "@/utils/auth";
 
-interface FailedFollowUpTask {
+interface FollowUpTask {
   id: string;
   customerName?: string;
   customerLastName?: string;
@@ -28,6 +29,7 @@ interface FailedFollowUpTask {
 }
 
 type FollowUpAction = "retry" | "discard";
+type FollowUpTab = "problems" | "scheduled" | "sent";
 
 interface ActionState {
   id: string;
@@ -37,6 +39,9 @@ interface ActionState {
 const statusLabels: Record<string, string> = {
   FAILED: "Fallido",
   SKIPPED: "Omitido",
+  PENDING: "Programado",
+  PROCESSING: "Enviando",
+  SENT: "Enviado",
   SCHEDULED: "Programado",
   READY: "Listo",
   COMPLETED: "Completado",
@@ -49,6 +54,12 @@ const templateLabels: Record<string, string> = {
   SATISFACTION_14D: "Encuesta de calidad",
 };
 
+const tabConfig: { id: FollowUpTab; label: string; endpoint: string }[] = [
+  { id: "problems", label: "Con problemas", endpoint: "failed" },
+  { id: "scheduled", label: "Programados", endpoint: "scheduled" },
+  { id: "sent", label: "Enviados", endpoint: "sent" },
+];
+
 function formatDate(value?: string) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("es-AR", {
@@ -60,11 +71,11 @@ function formatDate(value?: string) {
   }).format(new Date(value));
 }
 
-function customerName(task: FailedFollowUpTask) {
+function customerName(task: FollowUpTask) {
   return [task.customerName, task.customerLastName].filter(Boolean).join(" ").trim() || "Cliente sin nombre";
 }
 
-function getTemplateLabel(task: FailedFollowUpTask) {
+function getTemplateLabel(task: FollowUpTask) {
   return templateLabels[task.templateId] ?? task.templateId;
 }
 
@@ -79,69 +90,123 @@ async function readErrorMessage(response: Response, fallback: string) {
 
 function StatusBadge({ status }: { status?: string }) {
   const normalized = status ?? "UNKNOWN";
-  const isSkipped = normalized === "SKIPPED";
-  const isFailed = normalized === "FAILED";
+  const toneClass =
+    normalized === "FAILED"
+      ? "bg-red-500/10 text-red-700 dark:text-red-300"
+      : normalized === "SKIPPED"
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        : normalized === "SENT" || normalized === "COMPLETED"
+          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : normalized === "PENDING" || normalized === "SCHEDULED" || normalized === "PROCESSING"
+            ? "bg-sky-500/10 text-sky-700 dark:text-sky-300"
+            : "bg-neutral-500/10 text-neutral-700 dark:text-neutral-300";
 
   return (
-    <span
-      className={[
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        isFailed
-          ? "bg-red-500/10 text-red-700 dark:text-red-300"
-          : isSkipped
-            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-            : "bg-neutral-500/10 text-neutral-700 dark:text-neutral-300",
-      ].join(" ")}
-    >
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${toneClass}`}>
       {statusLabels[normalized] ?? normalized}
     </span>
   );
 }
 
-function StatCard({ label, value, tone }: { label: string; value: number; tone: "red" | "amber" | "green" }) {
+function StatCard({
+  label,
+  value,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone: "red" | "amber" | "green" | "sky";
+  active?: boolean;
+  onClick?: () => void;
+}) {
   const toneClass = {
     red: "from-red-500/15 to-red-500/5 text-red-700 dark:text-red-300",
     amber: "from-amber-500/15 to-amber-500/5 text-amber-700 dark:text-amber-300",
     green: "from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300",
+    sky: "from-sky-500/15 to-sky-500/5 text-sky-700 dark:text-sky-300",
   }[tone];
 
   return (
-    <div className={`rounded-2xl border border-border bg-gradient-to-br ${toneClass} p-4 shadow-sm`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        `rounded-2xl border bg-gradient-to-br ${toneClass} p-4 text-left shadow-sm transition`,
+        active ? "border-yellow-400 ring-2 ring-yellow-400/40" : "border-border hover:border-yellow-400/40",
+      ].join(" ")}
+    >
       <p className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</p>
       <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-neutral-100">{value}</p>
+    </button>
+  );
+}
+
+function EmptyState({ tab }: { tab: FollowUpTab }) {
+  const copy = {
+    problems: {
+      title: "No hay nada para revisar",
+      body: "Cuando falle un envío automático, va a aparecer acá con su acción de reenvío.",
+    },
+    scheduled: {
+      title: "No hay seguimientos programados",
+      body: "Los mensajes pendientes de envío van a listarse acá con la fecha y hora previstas.",
+    },
+    sent: {
+      title: "No hay envíos exitosos recientes",
+      body: "Los seguimientos enviados correctamente van a aparecer acá con la fecha de envío.",
+    },
+  }[tab];
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-10 text-center">
+      <CheckCircle2 className="mx-auto mb-3 text-emerald-500" size={34} />
+      <h2 className="text-lg font-semibold text-gray-950 dark:text-neutral-50">{copy.title}</h2>
+      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{copy.body}</p>
     </div>
   );
 }
 
 export default function FollowUpsView() {
-  const [tasks, setTasks] = useState<FailedFollowUpTask[]>([]);
+  const [activeTab, setActiveTab] = useState<FollowUpTab>("problems");
+  const [tasksByTab, setTasksByTab] = useState<Record<FollowUpTab, FollowUpTask[]>>({
+    problems: [],
+    scheduled: [],
+    sent: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState | null>(null);
 
-  const summary = useMemo(() => {
-    const failed = tasks.filter((task) => task.status === "FAILED").length;
-    const skipped = tasks.filter((task) => task.status === "SKIPPED").length;
-    return {
-      total: tasks.length,
-      failed,
-      skipped,
-    };
-  }, [tasks]);
+  const tasks = tasksByTab[activeTab];
+
+  const summary = useMemo(
+    () => ({
+      problems: tasksByTab.problems.length,
+      scheduled: tasksByTab.scheduled.length,
+      sent: tasksByTab.sent.length,
+    }),
+    [tasksByTab],
+  );
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await apiFetch(`${import.meta.env.VITE_API_URL}/follow-up/tasks/failed`);
+      const results = await Promise.all(
+        tabConfig.map(async (tab) => {
+          const response = await apiFetch(`${import.meta.env.VITE_API_URL}/follow-up/tasks/${tab.endpoint}`);
+          if (!response.ok) {
+            throw new Error(await readErrorMessage(response, `No se pudieron cargar los seguimientos (${tab.label}).`));
+          }
+          const data = (await response.json()) as FollowUpTask[];
+          return [tab.id, data] as const;
+        }),
+      );
 
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response, "No se pudieron cargar los seguimientos."));
-      }
-
-      const data = (await response.json()) as FailedFollowUpTask[];
-      setTasks(data);
+      setTasksByTab(Object.fromEntries(results) as Record<FollowUpTab, FollowUpTask[]>);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ocurrió un error inesperado.");
     } finally {
@@ -153,14 +218,19 @@ export default function FollowUpsView() {
     loadTasks();
   }, [loadTasks]);
 
-  const removeFromList = (taskId: string) => {
-    setTasks((current) => current.filter((task) => task.id !== taskId));
+  const removeFromProblems = (taskId: string) => {
+    setTasksByTab((current) => ({
+      ...current,
+      problems: current.problems.filter((task) => task.id !== taskId),
+    }));
   };
 
-  const retryTask = async (task: FailedFollowUpTask) => {
+  const retryTask = async (task: FollowUpTask) => {
     const name = customerName(task);
     const template = getTemplateLabel(task);
-    const confirmed = window.confirm(`¿Reenviar ahora "${template}" para ${name}?\n\nEsto vuelve a poner el mensaje en cola para envío automático.`);
+    const confirmed = window.confirm(
+      `¿Reenviar ahora "${template}" para ${name}?\n\nEsto vuelve a poner el mensaje en cola para envío automático.`,
+    );
 
     if (!confirmed) return;
 
@@ -176,7 +246,8 @@ export default function FollowUpsView() {
         throw new Error(await readErrorMessage(response, "No se pudo reenviar el seguimiento."));
       }
 
-      removeFromList(task.id);
+      removeFromProblems(task.id);
+      await loadTasks();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo reenviar el seguimiento.");
     } finally {
@@ -184,9 +255,11 @@ export default function FollowUpsView() {
     }
   };
 
-  const discardTask = async (task: FailedFollowUpTask) => {
+  const discardTask = async (task: FollowUpTask) => {
     const name = customerName(task);
-    const confirmed = window.confirm(`¿Borrar este seguimiento de la bandeja?\n\nCliente: ${name}\n\nNo se enviará automáticamente y quedará cancelado para auditoría.`);
+    const confirmed = window.confirm(
+      `¿Borrar este seguimiento de la bandeja?\n\nCliente: ${name}\n\nNo se enviará automáticamente y quedará cancelado para auditoría.`,
+    );
 
     if (!confirmed) return;
 
@@ -202,7 +275,7 @@ export default function FollowUpsView() {
         throw new Error(await readErrorMessage(response, "No se pudo borrar el seguimiento."));
       }
 
-      removeFromList(task.id);
+      removeFromProblems(task.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo borrar el seguimiento.");
     } finally {
@@ -210,8 +283,26 @@ export default function FollowUpsView() {
     }
   };
 
-  const isActing = (task: FailedFollowUpTask, type: FollowUpAction) =>
+  const isActing = (task: FollowUpTask, type: FollowUpAction) =>
     actionState?.id === task.id && actionState.type === type;
+
+  const headerCopy = {
+    problems: {
+      badge: "Bandeja operativa",
+      title: "Seguimientos",
+      body: "Revisá fallidos y omitidos, mirá qué está programado y confirmá los envíos exitosos.",
+    },
+    scheduled: {
+      badge: "Cola de envío",
+      title: "Programados",
+      body: "Mensajes automáticos pendientes. La fecha indica cuándo se van a enviar.",
+    },
+    sent: {
+      badge: "Historial reciente",
+      title: "Enviados exitosos",
+      body: "Seguimientos que ya salieron correctamente, con la fecha y hora de envío.",
+    },
+  }[activeTab];
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-foreground md:px-8">
@@ -221,12 +312,17 @@ export default function FollowUpsView() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-700 dark:text-yellow-300">
-                  <AlertTriangle size={14} /> Bandeja operativa
+                  {activeTab === "problems" ? (
+                    <AlertTriangle size={14} />
+                  ) : activeTab === "scheduled" ? (
+                    <Clock3 size={14} />
+                  ) : (
+                    <Send size={14} />
+                  )}{" "}
+                  {headerCopy.badge}
                 </div>
-                <h1 className="mt-4 text-3xl font-bold text-gray-950 dark:text-neutral-50">Seguimientos con problemas</h1>
-                <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                  Acá revisás mensajes automáticos fallidos u omitidos. Podés reenviarlos cuando el problema esté resuelto o borrarlos de la bandeja sin perder auditoría.
-                </p>
+                <h1 className="mt-4 text-3xl font-bold text-gray-950 dark:text-neutral-50">{headerCopy.title}</h1>
+                <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">{headerCopy.body}</p>
               </div>
 
               <button
@@ -243,9 +339,27 @@ export default function FollowUpsView() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Total en bandeja" value={summary.total} tone="green" />
-          <StatCard label="Fallidos" value={summary.failed} tone="red" />
-          <StatCard label="Omitidos" value={summary.skipped} tone="amber" />
+          <StatCard
+            label="Con problemas"
+            value={summary.problems}
+            tone="red"
+            active={activeTab === "problems"}
+            onClick={() => setActiveTab("problems")}
+          />
+          <StatCard
+            label="Programados"
+            value={summary.scheduled}
+            tone="sky"
+            active={activeTab === "scheduled"}
+            onClick={() => setActiveTab("scheduled")}
+          />
+          <StatCard
+            label="Enviados"
+            value={summary.sent}
+            tone="green"
+            active={activeTab === "sent"}
+            onClick={() => setActiveTab("sent")}
+          />
         </section>
 
         {error && (
@@ -261,13 +375,7 @@ export default function FollowUpsView() {
             Cargando seguimientos...
           </div>
         ) : tasks.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-10 text-center">
-            <CheckCircle2 className="mx-auto mb-3 text-emerald-500" size={34} />
-            <h2 className="text-lg font-semibold text-gray-950 dark:text-neutral-50">No hay nada para revisar</h2>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Cuando falle un envío automático, va a aparecer acá con su acción de reenvío.
-            </p>
-          </div>
+          <EmptyState tab={activeTab} />
         ) : (
           <section className="grid gap-4">
             {tasks.map((task) => (
@@ -275,7 +383,12 @@ export default function FollowUpsView() {
                 key={task.id}
                 className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-yellow-400/30 hover:shadow-md md:p-5"
               >
-                <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_auto] lg:items-center">
+                <div
+                  className={[
+                    "grid gap-4 lg:items-center",
+                    activeTab === "problems" ? "lg:grid-cols-[1.4fr_1fr_auto]" : "lg:grid-cols-[1.4fr_1fr]",
+                  ].join(" ")}
+                >
                   <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={task.status} />
@@ -286,23 +399,58 @@ export default function FollowUpsView() {
                     </div>
 
                     <div>
-                      <h2 className="truncate text-lg font-bold text-gray-950 dark:text-neutral-50">{customerName(task)}</h2>
-                      <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{task.product || "Sin producto asociado"}</p>
+                      <h2 className="truncate text-lg font-bold text-gray-950 dark:text-neutral-50">
+                        {customerName(task)}
+                      </h2>
+                      <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                        {task.product || "Sin producto asociado"}
+                      </p>
                     </div>
 
-                    <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-700 dark:text-red-300">
-                      <p className="break-words" title={task.error}>{task.error || "Sin detalle de error"}</p>
-                    </div>
+                    {activeTab === "problems" && (
+                      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-700 dark:text-red-300">
+                        <p className="break-words" title={task.error}>
+                          {task.error || "Sin detalle de error"}
+                        </p>
+                      </div>
+                    )}
+
+                    {activeTab === "scheduled" && (
+                      <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-3 text-sm text-sky-800 dark:text-sky-200">
+                        <p className="font-semibold">Se envía el {formatDate(task.executeAt)}</p>
+                      </div>
+                    )}
+
+                    {activeTab === "sent" && (
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-800 dark:text-emerald-200">
+                        <p className="font-semibold">Enviado el {formatDate(task.processedAt ?? task.executeAt)}</p>
+                      </div>
+                    )}
                   </div>
 
                   <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-2">
                     <div className="rounded-xl bg-muted/40 p-3">
-                      <dt className="flex items-center gap-1.5 text-xs text-neutral-500"><UserRound size={13} /> Asesor</dt>
-                      <dd className="mt-1 font-semibold text-gray-900 dark:text-neutral-100">{task.assignedTo || "Sin asignar"}</dd>
+                      <dt className="flex items-center gap-1.5 text-xs text-neutral-500">
+                        <UserRound size={13} /> Asesor
+                      </dt>
+                      <dd className="mt-1 font-semibold text-gray-900 dark:text-neutral-100">
+                        {task.assignedTo || "Sin asignar"}
+                      </dd>
                     </div>
                     <div className="rounded-xl bg-muted/40 p-3">
-                      <dt className="flex items-center gap-1.5 text-xs text-neutral-500"><Clock3 size={13} /> Procesado</dt>
-                      <dd className="mt-1 font-semibold text-gray-900 dark:text-neutral-100">{formatDate(task.processedAt)}</dd>
+                      <dt className="flex items-center gap-1.5 text-xs text-neutral-500">
+                        <Clock3 size={13} />
+                        {activeTab === "scheduled" ? "Programado para" : activeTab === "sent" ? "Enviado" : "Procesado"}
+                      </dt>
+                      <dd className="mt-1 font-semibold text-gray-900 dark:text-neutral-100">
+                        {formatDate(
+                          activeTab === "scheduled"
+                            ? task.executeAt
+                            : activeTab === "sent"
+                              ? task.processedAt ?? task.executeAt
+                              : task.processedAt,
+                        )}
+                      </dd>
                     </div>
                     <div className="rounded-xl bg-muted/40 p-3">
                       <dt className="text-xs text-neutral-500">Intentos</dt>
@@ -314,26 +462,28 @@ export default function FollowUpsView() {
                     </div>
                   </dl>
 
-                  <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                    <button
-                      type="button"
-                      onClick={() => retryTask(task)}
-                      disabled={actionState !== null}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-bold text-gray-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <RotateCcw size={16} />
-                      {isActing(task, "retry") ? "Reenviando..." : "Reenviar"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => discardTask(task)}
-                      disabled={actionState !== null}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300"
-                    >
-                      <Trash2 size={16} />
-                      {isActing(task, "discard") ? "Borrando..." : "Borrar"}
-                    </button>
-                  </div>
+                  {activeTab === "problems" && (
+                    <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                      <button
+                        type="button"
+                        onClick={() => retryTask(task)}
+                        disabled={actionState !== null}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-bold text-gray-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <RotateCcw size={16} />
+                        {isActing(task, "retry") ? "Reenviando..." : "Reenviar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => discardTask(task)}
+                        disabled={actionState !== null}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300"
+                      >
+                        <Trash2 size={16} />
+                        {isActing(task, "discard") ? "Borrando..." : "Borrar"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
