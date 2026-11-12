@@ -1,6 +1,7 @@
 import React, { useState, useEffect, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { apiFetch, authStore } from "@/utils/auth";
+import { CurrentUserContext, type CurrentUser } from "@/context/CurrentUserContext";
 
 interface Props {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface Props {
 export const PrivateRouters: React.FC<Props> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export const PrivateRouters: React.FC<Props> = ({ children }) => {
         }
 
         if (res.ok) {
+          setCurrentUser(await res.json());
           setAuthenticated(true);
         } else {
           setAuthenticated(false);
@@ -61,7 +64,7 @@ export const PrivateRouters: React.FC<Props> = ({ children }) => {
     return null;
   }
   return authenticated ? (
-    <>{children}</>
+    <CurrentUserContext.Provider value={currentUser}>{children}</CurrentUserContext.Provider>
   ) : (
     <Navigate to="/login" replace state={{ from: location }} />
   );

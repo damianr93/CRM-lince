@@ -4,6 +4,7 @@ import Dashboard from "../views/Analisis";
 import ClientsViewer from "@/views/Clients";
 import SatisfactionDashboard from "@/views/satisfactions";
 import FollowUpsView from "@/views/FollowUps";
+import UsersView from "@/views/Users";
 
 export const UserRoutes = () => {
   return (
@@ -16,6 +17,7 @@ export const UserRoutes = () => {
           <Route path="clientes" element={<ClientsViewer />} />
           <Route path="satisfaccion" element={<SatisfactionDashboard />} />
           <Route path="seguimientos" element={<FollowUpsView />} />
+          <Route path="usuarios" element={<UsersView />} />
         </Routes>
       </div>
     </>

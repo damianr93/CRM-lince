@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart2, HeartHandshake, Menu, LogOut, Moon, RotateCcw, Sun, Users } from "lucide-react";
+import { BarChart2, HeartHandshake, Menu, LogOut, Moon, RotateCcw, Sun, UserCog, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch, authStore } from "@/utils/auth";
 import { useTheme } from "@/context/ThemeContext";
+import { isAdmin, useCurrentUser } from "@/context/CurrentUserContext";
 
 const navItems = [
     { label: "Análisis", icon: <BarChart2 size={18} />, path: "/home" },
@@ -12,12 +13,18 @@ const navItems = [
     { label: "Seguimientos", icon: <RotateCcw size={18} />, path: "/seguimientos" },
 ];
 
+const adminNavItems = [
+    { label: "Usuarios", icon: <UserCog size={18} />, path: "/usuarios" },
+];
+
 export default function Sidebar() {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, toggleTheme } = useTheme();
+    const currentUser = useCurrentUser();
+    const visibleNavItems = isAdmin(currentUser) ? [...navItems, ...adminNavItems] : navItems;
 
     const handleLogout = async () => {
         if (isLoggingOut) return;
@@ -96,7 +103,7 @@ export default function Sidebar() {
                                 </div>
 
                                 <ul className="space-y-1">
-                                    {navItems.map((item) => (
+                                    {visibleNavItems.map((item) => (
                                         <li key={item.path}>
                                             <button
                                                 type="button"
